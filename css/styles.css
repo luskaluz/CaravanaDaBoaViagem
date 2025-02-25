@@ -291,24 +291,33 @@ footer {
     padding: 1.5rem;
     margin: 0.5rem;
     border-radius: 5px;
-
     width: 250px;
     max-width: 250px;
-    border: 1px solid #ccc;
-
     display: flex;
     flex-direction: column;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-/* .card img {
+.card img {
     width: 100%;
     height: auto;
     object-fit: cover;
     border-radius: 5px;
-} */
+    margin-bottom: 1rem;
+}
 
 .card h3 {
     margin: 5px;
+}
+
+
+.sobre-desc {
+    max-width: 800px; /* Define uma largura máxima para facilitar a leitura */
+    margin: 0 auto; /* Centraliza o texto na página */
+    text-align: justify; /* Justifica o texto */
+    line-height: 2; /* Aumenta o espaçamento entre linhas */
+    font-size: 1.1rem; /* Melhora a legibilidade */
+    padding: 20px; /* Adiciona espaçamento interno */
 }
 
 .servicos-section {
@@ -348,4 +357,139 @@ footer {
     color: #004080;
     font-weight: bold;
     margin-right: 10px;
+}
+
+@media (max-width: 1024px) {
+    .servicos-section {
+        padding: 2rem 5rem;
+    }
+
+    .menu {
+        justify-content: space-between;
+    }
+
+    .evento {
+        width: 80%;
+    }
+}
+
+@media (max-width: 768px) {
+    .servicos-section {
+        padding: 2rem;
+    }
+
+    .navbar {
+        padding: 0.8rem;
+    }
+
+    .menu {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .menu li {
+        margin: 10px 0;
+    }
+
+    .banner {
+        height: 400px;
+    }
+
+    .banner h1 {
+        font-size: 32px;
+        padding-top: 200px;
+    }
+
+    .grid-eventos {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .evento {
+        width: 90%;
+    }
+
+    .evento img {
+        width: 120px;
+        height: 100px;
+    }
+
+    .botao-evento {
+        padding: 10px 60px;
+    }
+
+    .formulario input,
+    .formulario button {
+        font-size: 14px;
+    }
+
+    .card {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .servicos-section {
+        padding: 1rem;
+    }
+
+    .navbar {
+        text-align: center;
+    }
+
+    .banner {
+        height: 300px;
+    }
+
+    .banner h1 {
+        font-size: 24px;
+        padding-top: 150px;
+    }
+
+    .destinos h2 {
+        font-size: 32px;
+    }
+
+    .evento {
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .evento img {
+        width: 100%;
+        height: auto;
+    }
+
+    .botao-evento {
+        padding: 10px 40px;
+        font-size: 14px;
+    }
+
+    .servicos {
+        padding: 1rem;
+    }
+
+    .servicos-item {
+        font-size: 16px;
+    }
+
+    .container {
+        max-width: 100%;
+    }
+
+    .botoes {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .botoes button {
+        width: 100%;
+    }
+
+    .formulario input,
+    .formulario button {
+        width: 100%;
+    }
 }
