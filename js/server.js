@@ -19,9 +19,9 @@ const auth = firebaseAdmin.auth();
 const db = firebaseAdmin.firestore();
 
 app.use(bodyParser.json());
-
 app.use(express.static(path.join(__dirname, "../")));
 
+// Função para validar dados de cadastro de usuário
 const validarDadosCadastro = (nome, email, senha, telefone, idade) => {
   if (!nome || !email || !senha || !telefone || !idade) {
     return "Todos os campos são obrigatórios.";
@@ -36,7 +36,6 @@ const validarDadosCadastro = (nome, email, senha, telefone, idade) => {
     return "A senha deve ter pelo menos 6 caracteres.";
   }
 
-  //trocar de acordo com o termo de uso dps
   if (idade <= 18) {
     return "Você deve ser um adulto para realizar o cadastro.";
   }
@@ -44,7 +43,7 @@ const validarDadosCadastro = (nome, email, senha, telefone, idade) => {
   return null;
 };
 
-// Cadastro
+// Rota para cadastrar usuário
 app.post("/register", async (req, res) => {
   const { nome, email, senha, telefone, idade } = req.body;
 
@@ -92,7 +91,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// busca no banco de dados
+// Rota para buscar dados do usuário
 app.get("/user/:uid", async (req, res) => {
   const { uid } = req.params;
 
@@ -107,6 +106,86 @@ app.get("/user/:uid", async (req, res) => {
   } catch (error) {
     console.error("Erro ao buscar dados do usuário:", error);
     res.status(500).json({ error: "Erro ao buscar informações do usuário." });
+  }
+});
+
+
+const verificarAdmin = async (req, res, next) => {
+  const { uid } = req.body;
+
+  try {
+    const userDoc = await db.collection("users").doc(uid).get();
+
+    if (!userDoc.exists || userDoc.data().email !== "adm@adm.com") {
+      return res.status(403).json({ error: "Acesso negado. Somente administradores podem realizar esta ação." });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Erro ao verificar admin:", error);
+    res.status(500).json({ error: "Erro ao verificar permissões." });
+  }
+};
+
+
+// Rota para cadastrar caravanas
+app.post("/cadastrar-caravana", verificarAdmin, async (req, res) => {
+  const { uid, local, preco, data, horarioSaida, imagens, descricao } = req.body;
+
+  if (!local || !preco || !data || !horarioSaida || !imagens || !descricao) {
+    return res.status(400).json({ error: "Todos os campos são obrigatórios." });
+  }
+
+  try {
+    const caravanaRef = await db.collection("caravanas").add({
+      local,
+      preco,
+      data,
+      horarioSaida,
+      imagens,
+      descricao,
+    });
+
+    res.status(200).json({ message: "Caravana cadastrada com sucesso!", id: caravanaRef.id });
+  } catch (error) {
+    console.error("Erro ao cadastrar caravana:", error);
+    res.status(500).json({ error: "Erro ao cadastrar caravana." });
+  }
+});
+
+app.get("/caravanas", async (req, res) => {
+  try {
+    const caravanasSnapshot = await db.collection("caravanas").get();
+    const caravanas = [];
+
+    caravanasSnapshot.forEach((doc) => {
+      const data = doc.data();
+      console.log("Dados da caravana:", data); // Log para depuração
+      caravanas.push({ id: doc.id, ...data });
+    });
+
+    res.status(200).json(caravanas);
+  } catch (error) {
+    console.error("Erro ao buscar caravanas:", error);
+    res.status(500).json({ error: "Erro ao buscar caravanas." });
+  }
+});
+
+// Rota para buscar caravana por ID
+app.get("/caravanas/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const caravanaDoc = await db.collection("caravanas").doc(id).get();
+
+    if (!caravanaDoc.exists) {
+      return res.status(404).json({ error: "Caravana não encontrada." });
+    }
+
+    res.status(200).json(caravanaDoc.data());
+  } catch (error) {
+    console.error("Erro ao buscar caravana:", error);
+    res.status(500).json({ error: "Erro ao buscar caravana." });
   }
 });
 
