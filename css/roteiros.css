@@ -1,3 +1,11 @@
+/* Estilos Gerais */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
 
 /* Catálogo de Roteiros */
 .catalogo-roteiros {
@@ -75,4 +83,234 @@
 
 .btn-saiba-mais:hover {
     background-color: #006699;
+}
+
+/* Cards de Roteiros */
+.roteiro-card {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    text-align: center;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.roteiro-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.roteiro-card h4 {
+    margin: 10px 0;
+    font-size: 1.2em;
+}
+
+.roteiro-card p {
+    margin: 5px 0;
+    font-size: 1em;
+}
+
+.roteiro-card button {
+    margin: 10px 0;
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.roteiro-card button:hover {
+    background-color: #0056b3;
+}
+
+/* Pop-up Geral */
+.popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* z-index menor que o pop-up de edição */
+}
+
+.popup-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 90%;
+    display: flex;
+    gap: 20px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.popup-imagens {
+    position: relative;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#popup-imagem-principal {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Sombra sobre a imagem */
+}
+
+.popup-navegacao {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 1; /* Garante que os botões fiquem acima da imagem */
+}
+
+.popup-navegacao button {
+    background-color: rgba(0, 0, 0, 0.6); /* Fundo semi-transparente */
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 50%; /* Botões redondos */
+    cursor: pointer;
+    font-size: 16px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Sombra suave */
+}
+
+.popup-navegacao button:hover {
+    background-color: rgba(0, 0, 0, 0.8); /* Fundo mais escuro ao passar o mouse */
+}
+
+#popup-anterior {
+    left: 10px; /* Posiciona à esquerda */
+}
+
+#popup-proximo {
+    right: 10px; /* Posiciona à direita */
+}
+
+.popup-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.popup-info h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    color: #003662;
+}
+
+.popup-info p {
+    margin: 0;
+    font-size: 1rem;
+    color: #555;
+}
+
+.popup-info button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.popup-info button:hover {
+    background-color: #0056b3;
+}
+
+#popup-editar-caravana {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    display: none; /* Oculta o pop-up por padrão */
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    position: fixed; /* Centraliza o pop-up */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Centraliza vertical e horizontalmente */
+    z-index: 1001; /* Garante que fique acima de outros elementos */
+}
+
+#popup-editar-caravana h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    color: #003662;
+    text-align: center;
+}
+
+#popup-editar-caravana label {
+    font-size: 1rem;
+    color: #555;
+    font-weight: bold;
+}
+
+#popup-editar-caravana input,
+#popup-editar-caravana textarea {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#popup-editar-caravana textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+#popup-editar-caravana button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+#botao-salvar-edicao {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#botao-salvar-edicao:hover {
+    background-color: #45a049;
+}
+
+#botao-cancelar-edicao {
+    background-color: #f44336;
+    color: white;
+}
+
+#botao-cancelar-edicao:hover {
+    background-color: #e53935;
 }

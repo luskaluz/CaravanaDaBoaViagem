@@ -92,13 +92,6 @@ body {
     margin-bottom: 50px;
 }
 
-.grid-eventos {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
 .evento {
     background: white;
     padding: 15px;
@@ -492,4 +485,276 @@ footer {
     .formulario button {
         width: 100%;
     }
+}
+
+.swiper {
+    width: 100%;
+    height: 300px;
+    margin: 20px 0;
+  }
+  
+  .swiper-slide {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+  }
+  
+  .card-imagem {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+  
+  .card-titulo {
+    font-size: 18px;
+    margin: 10px 0;
+    color: #333;
+  }
+  
+  .card-preco {
+    font-size: 16px;
+    color: #e67e22;
+    font-weight: bold;
+  }
+
+  
+  .eventos {
+    padding: 2rem;
+    text-align: center;
+}
+
+
+
+.evento {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: left;
+}
+
+.evento h3 {
+    font-size: 1.5rem;
+    color: #003662;
+    margin-bottom: 10px;
+}
+
+.evento p {
+    font-size: 1rem;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+.evento button {
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.evento button:hover {
+    background-color: #0056b3;
+}
+/* Estilos para os cards de eventos */
+.grid-eventos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+
+/* Estilos para o popup */
+.popup-confira {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.popup-confira-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+}
+
+.popup-confira-imagens {
+    position: relative;
+}
+
+.popup-confira-imagens img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.popup-confira-navegacao {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.popup-confira-navegacao:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+#popup-confira-anterior {
+    left: 10px;
+}
+
+#popup-confira-proximo {
+    right: 10px;
+}
+
+.popup-confira-info h2 {
+    margin: 10px 0;
+    font-size: 24px;
+    color: #333;
+}
+
+.popup-confira-info p {
+    font-size: 16px;
+    color: #555;
+}
+
+.popup-confira-info button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 10px 5px;
+}
+
+.popup-confira-info button:hover {
+    background-color: #0056b3;
+}
+
+/* Estilos para os cards de eventos */
+.grid-eventos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.evento-card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.evento-card-imagem {
+    width: 100%;
+    height: 200px; /* Ajuste a altura conforme necessário */
+    object-fit: cover;
+}
+
+.evento-card-conteudo {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.evento-card-nome {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.evento-card button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.evento-card button:hover {
+    background-color: #0056b3;
+}
+
+/* Estilos para os cards de eventos */
+.grid-eventos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 20px;
+}
+
+.evento-card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 20%; /* Define o card como 20% da largura da tela */
+    display: flex;
+    flex-direction: column;
+}
+
+.evento-card-imagem {
+    width: 100%;
+    height: 150px; /* Ajuste a altura conforme necessário */
+    object-fit: cover;
+}
+
+.evento-card-conteudo {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.evento-card-nome {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.evento-card button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.evento-card button:hover {
+    background-color: #0056b3;
 }
