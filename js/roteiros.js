@@ -54,6 +54,16 @@ const abrirPopup = async (id) => {
       document.getElementById("popup-vagas-disponiveis").textContent = caravana.vagasDisponiveis || "N/A";
     }
 
+    if (caravana.imagens && caravana.imagens.length > 0) {
+      imagensAtuais = caravana.imagens; // Armazena as imagens para navegação
+      indiceImagemAtual = 0; // Começa na primeira imagem
+      document.getElementById("popup-imagem-principal").src = imagensAtuais[indiceImagemAtual];
+    } else {
+      // Se não houver imagens, exibe uma imagem padrão
+      document.getElementById("popup-imagem-principal").src = "caminho/para/imagem_padrao.jpg";
+    }
+
+
     // Exibe o pop-up
     document.getElementById("popup").style.display = "flex";
   } catch (error) {
