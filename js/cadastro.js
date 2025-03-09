@@ -36,8 +36,25 @@ const mostrarFormulario = (formulario) => {
   }
 };
 
+const buscarDadosUsuario = async (uid) => {
+  try {
+    const resposta = await fetch(`/user/${uid}`);
+    const dados = await resposta.json();
+
+    if (resposta.ok) {
+      return dados; // Retorna os dados do usuário (nome, email, telefone, idade)
+    } else {
+      console.error("Erro ao buscar dados do usuário:", dados.error);
+      return null;
+    }
+  } catch (error) {
+    console.error("Erro ao buscar dados do usuário:", error);
+    return null;
+  }
+};
+
 // Função para atualizar a interface com base no estado de autenticação
-const atualizarInterface = (user) => {
+const atualizarInterface = async (user) => {
   const botoes = document.querySelector(".botoes");
   const infoUsuario = document.getElementById("info-usuario");
   const nomeUsuario = document.getElementById("nome-usuario");
@@ -49,9 +66,18 @@ const atualizarInterface = (user) => {
   if (user) {
     // Usuário logado
     botoes.style.display = "none"; // Oculta os botões de cadastro/login
-    infoUsuario.style.display = "block"; // Mostra as informações do usuário
-    nomeUsuario.textContent = user.email; // Exibe o email do usuário
-    emailUsuario.textContent = user.email;
+    infoUsuario.style.display = "block";
+
+    // Busca os dados do usuário no backend
+    const dadosUsuario = await buscarDadosUsuario(user.uid);
+
+    if (dadosUsuario) {
+      nomeUsuario.textContent = dadosUsuario.nome; // Exibe o nome do usuário
+      emailUsuario.textContent = user.email; // Exibe o email do usuário
+    } else {
+      nomeUsuario.textContent = "Usuário"; // Valor padrão se o nome não for encontrado
+      emailUsuario.textContent = user.email;
+    }
 
     // Oculta os formulários de cadastro e login
     formCadastro.style.display = "none";
@@ -80,11 +106,40 @@ const cadastrar = async () => {
   const telefone = document.getElementById("telefone").value;
   const idade = document.getElementById("idade").value;
 
+  // Valida o formato do telefone antes de enviar os dados
+  if (!validarTelefone(telefone)) {
+    alert("Telefone inválido. Use o formato (XX) XXXX-XXXX ou (XX) XXXXX-XXXX.");
+    return; // Interrompe a execução se o telefone estiver incorreto
+  }
+
   try {
+    // Cria o usuário no Firebase Authentication
     const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
     const user = userCredential.user;
-    alert("Usuário cadastrado com sucesso!");
-    atualizarInterface(user);
+
+    // Envia os dados do usuário para o backend (Firestore)
+    const resposta = await fetch("/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        uid: user.uid,
+        nome,
+        email,
+        telefone,
+        idade,
+      }),
+    });
+
+    const dados = await resposta.json();
+
+    if (resposta.ok) {
+      alert("Usuário cadastrado com sucesso!");
+      await atualizarInterface(user); // Aguarda a atualização da interface
+    } else {
+      alert("Erro ao cadastrar usuário: " + dados.error);
+    }
   } catch (error) {
     alert("Erro ao cadastrar: " + error.message);
   }
@@ -99,7 +154,7 @@ const login = async () => {
     const userCredential = await signInWithEmailAndPassword(auth, email, senha);
     const user = userCredential.user;
     alert("Login bem-sucedido!");
-    atualizarInterface(user);
+    await atualizarInterface(user); 
   } catch (error) {
     alert("Erro ao fazer login: " + error.message);
   }
@@ -155,6 +210,11 @@ const cadastrarCaravana = async () => {
     console.error("Erro ao cadastrar caravana:", error);
     alert("Erro ao cadastrar caravana: " + error.message);
   }
+};
+
+const validarTelefone = (telefone) => {
+  const regexTelefone = /^\(?\d{2}\)?\s?\d{4,5}[-\s]?\d{4}$/;
+  return regexTelefone.test(telefone);
 };
 
 // Event Listeners

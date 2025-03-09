@@ -241,33 +241,94 @@ const salvarEdicao = async (id) => {
     alert("Erro ao atualizar caravana: " + error.message);
   }
 };
+
+
 const adicionarBotoesAdmin = (card, caravana) => {
   const usuario = auth.currentUser;
 
+  // Verifica se o usuário é o administrador
   if (usuario && usuario.email === "adm@adm.com") {
-      const botoesContainer = document.createElement("div");
-      botoesContainer.className = "botoes-admin";
+    const botoesContainer = document.createElement("div");
+    botoesContainer.className = "botoes-admin";
 
-      // Botão de editar
-      const botaoEditar = document.createElement("button");
-      botaoEditar.textContent = "Editar";
-      botaoEditar.className = "btn-editar";
-      botaoEditar.addEventListener("click", () => abrirPopupEdicao(caravana));
+    // Botão de editar
+    const botaoEditar = document.createElement("button");
+    botaoEditar.textContent = "Editar";
+    botaoEditar.className = "btn-editar";
+    botaoEditar.addEventListener("click", () => abrirPopupEdicao(caravana));
 
-      // Botão de excluir
-      const botaoExcluir = document.createElement("button");
-      botaoExcluir.textContent = "Excluir";
-      botaoExcluir.className = "btn-excluir";
-      botaoExcluir.addEventListener("click", () => excluirCaravana(caravana.id));
+    // Botão de excluir
+    const botaoExcluir = document.createElement("button");
+    botaoExcluir.textContent = "Excluir";
+    botaoExcluir.className = "btn-excluir";
+    botaoExcluir.addEventListener("click", () => excluirCaravana(caravana.id));
 
-      // Adiciona os botões ao container
-      botoesContainer.appendChild(botaoEditar);
-      botoesContainer.appendChild(botaoExcluir);
+    // Botão de ver participantes
+    const botaoParticipantes = document.createElement("button");
+    botaoParticipantes.textContent = "Ver Participantes";
+    botaoParticipantes.className = "btn-participantes";
+    botaoParticipantes.addEventListener("click", () => verParticipantes(caravana.id));
 
-      // Adiciona o container de botões ao card
-      card.appendChild(botoesContainer);
+    // Adiciona os botões ao container
+    botoesContainer.appendChild(botaoEditar);
+    botoesContainer.appendChild(botaoExcluir);
+    botoesContainer.appendChild(botaoParticipantes);
+
+    // Adiciona o container de botões ao card
+    card.appendChild(botoesContainer);
   }
 };
+
+const verParticipantes = async (caravanaId) => {
+  try {
+    const resposta = await fetch(`/caravanas/${caravanaId}/participantes`);
+    const participantes = await resposta.json();
+
+    if (participantes.length === 0) {
+      alert("Nenhum participante registrado nesta caravana.");
+      return;
+    }
+
+    // Cria o conteúdo do pop-up
+    const participantesLista = participantes.map((p) => `
+      <div class="participante">
+        <p><strong>Nome:</strong> ${p.nome || "N/A"}</p>
+        <p><strong>Email:</strong> ${p.usuarioEmail}</p>
+        <p><strong>Quantidade de Ingressos:</strong> ${p.quantidade}</p>
+      </div>
+    `).join("");
+
+    const popupContent = `
+      <h2>Participantes da Caravana</h2>
+      <div class="lista-participantes">
+        ${participantesLista}
+      </div>
+      <div class="botoes-popup">
+        <button id="fechar-popup-participantes">Fechar</button>
+      </div>
+    `;
+
+    // Exibe o pop-up
+    const popup = document.createElement("div");
+    popup.className = "popup-participantes";
+    popup.innerHTML = `
+      <div class="popup-content">
+        ${popupContent}
+      </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    // Fecha o pop-up ao clicar no botão
+    document.getElementById("fechar-popup-participantes").addEventListener("click", () => {
+      document.body.removeChild(popup);
+    });
+  } catch (error) {
+    console.error("Erro ao buscar participantes:", error);
+    alert("Erro ao carregar participantes.");
+  }
+};
+
 
 document.getElementById("botao-salvar-edicao").addEventListener("click", () => {
   // Recupera o ID da caravana do pop-up de edição

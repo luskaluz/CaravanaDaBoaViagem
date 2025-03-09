@@ -21,46 +21,38 @@ const db = firebaseAdmin.firestore();
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "../")));
 
-// Função para validar dados de cadastro de usuário
-const validarDadosCadastro = (nome, email, senha, telefone, idade) => {
-  if (!nome || !email || !senha || !telefone || !idade) {
+const validarDadosCadastro = (nome, email, telefone, idade) => {
+  if (!nome || !email || !telefone || !idade) {
     return "Todos os campos são obrigatórios.";
   }
 
+  // Regex para validar o formato do telefone: (XX) XXXX-XXXX ou (XX) XXXXX-XXXX
   const regexTelefone = /^\(?\d{2}\)?\s?\d{4,5}[-\s]?\d{4}$/;
   if (!regexTelefone.test(telefone)) {
-    return "Telefone inválido. Use o formato (XX) XXXXX-XXXX ou (XX) XXXX-XXXX.";
-  }
-
-  if (senha.length < 6) {
-    return "A senha deve ter pelo menos 6 caracteres.";
+    return "Telefone inválido. Use o formato (XX) XXXX-XXXX ou (XX) XXXXX-XXXX.";
   }
 
   if (idade <= 18) {
     return "Você deve ser um adulto para realizar o cadastro.";
   }
 
-  return null;
+  return null; // Retorna null se não houver erros
 };
 
-// Rota para cadastrar usuário
-app.post("/register", async (req, res) => {
-  const { nome, email, senha, telefone, idade } = req.body;
 
-  const erroValidacao = validarDadosCadastro(nome, email, senha, telefone, idade);
+app.post("/register", async (req, res) => {
+  const { uid, nome, email, telefone, idade } = req.body;
+
+  console.log("Dados recebidos no backend:", { uid, nome, email, telefone, idade }); // Log dos dados recebidos
+
+  const erroValidacao = validarDadosCadastro(nome, email, telefone, idade);
   if (erroValidacao) {
     return res.status(400).json({ error: erroValidacao });
   }
 
   try {
-    const userRecord = await auth.createUser({
-      email,
-      password: senha,
-    });
-
-    console.log("Usuário criado no Firebase Auth:", userRecord.uid);
-
-    await db.collection("users").doc(userRecord.uid).set({
+    // Salva os dados no Firestore
+    await db.collection("users").doc(uid).set({
       nome,
       email,
       telefone,
@@ -71,26 +63,10 @@ app.post("/register", async (req, res) => {
 
     res.status(200).json({ message: "Usuário registrado com sucesso!" });
   } catch (error) {
-    console.error("Erro no registro:", error);
-
-    let errorMessage = "Erro ao registrar usuário.";
-
-    switch (error.code) {
-      case "auth/email-already-exists":
-        errorMessage = "O endereço de e-mail já está em uso.";
-        break;
-      case "auth/invalid-email":
-        errorMessage = "O endereço de e-mail é inválido.";
-        break;
-      default:
-        console.error("Erro desconhecido:", error.message);
-        errorMessage = "Ocorreu um erro inesperado no cadastro.";
-    }
-
-    res.status(400).json({ error: errorMessage });
+    console.error("Erro ao salvar no Firestore:", error);
+    res.status(400).json({ error: "Erro ao salvar dados do usuário no Firestore." });
   }
 });
-
 // Rota para buscar dados do usuário
 app.get("/user/:uid", async (req, res) => {
   const { uid } = req.params;
@@ -290,6 +266,33 @@ app.put("/caravanas/:id", async (req, res) => {
   } catch (error) {
     console.error("Erro ao atualizar caravana:", error);
     res.status(500).json({ error: "Erro ao atualizar caravana." });
+  }
+});
+
+
+app.get("/caravanas/:id/participantes", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const participantesSnapshot = await db.collection("participantes")
+      .where("caravanaId", "==", id)
+      .get();
+
+    const participantes = [];
+    for (const doc of participantesSnapshot.docs) {
+      const participante = doc.data();
+      // Busca o nome do usuário no Firestore
+      const userDoc = await db.collection("users").doc(participante.usuarioId).get();
+      if (userDoc.exists) {
+        participante.nome = userDoc.data().nome; // Adiciona o nome ao objeto do participante
+      }
+      participantes.push(participante);
+    }
+
+    res.status(200).json(participantes);
+  } catch (error) {
+    console.error("Erro ao buscar participantes:", error);
+    res.status(500).json({ error: "Erro ao buscar participantes." });
   }
 });
 
