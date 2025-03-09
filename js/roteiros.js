@@ -35,7 +35,10 @@ const abrirPopup = async (id) => {
     const resposta = await fetch(`/caravanas/${id}`);
     const caravana = await resposta.json();
 
-    // Atualiza o conteúdo do pop-up
+    // Define o ID da caravana no popup
+    document.getElementById("popup").setAttribute("data-caravana-id", id);
+
+    // Atualiza o conteúdo do popup
     document.getElementById("popup-nome").textContent = caravana.local;
     document.getElementById("popup-descricao").textContent = caravana.descricao;
 
@@ -54,6 +57,7 @@ const abrirPopup = async (id) => {
       document.getElementById("popup-vagas-disponiveis").textContent = caravana.vagasDisponiveis || "N/A";
     }
 
+    // Verifica se há imagens e exibe a primeira
     if (caravana.imagens && caravana.imagens.length > 0) {
       imagensAtuais = caravana.imagens; // Armazena as imagens para navegação
       indiceImagemAtual = 0; // Começa na primeira imagem
@@ -63,8 +67,7 @@ const abrirPopup = async (id) => {
       document.getElementById("popup-imagem-principal").src = "caminho/para/imagem_padrao.jpg";
     }
 
-
-    // Exibe o pop-up
+    // Exibe o popup
     document.getElementById("popup").style.display = "flex";
   } catch (error) {
     console.error("Erro ao abrir popup:", error);
