@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roteiros - Caravana da Baixada Santista</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
     <header>
         <nav class="navbar">
@@ -14,18 +16,86 @@
                 <li><a href="sobre.html">Sobre</a></li>
                 <li><a href="roteiros.html">Roteiros</a></li>
                 <li><a href="galeria.html">Galeria</a></li>
-                <li><a href="contato.html">Contato</a></li>
+                <li><a href="cadastro.html">Contato</a></li>
             </ul>
         </nav>
     </header>
+
     <main>
-        <h1>Roteiros</h1>
-        <div id="caravanas-container" class="caravanas-container"></div>
+        <section class="roteiros">
+            <h2>Roteiros Disponíveis</h2>
+            <div class="grid-roteiros" id="caravanas-container">
+                <!-- Os cards das caravanas serão inseridos aqui dinamicamente -->
+            </div>
+        </section>
     </main>
+
     <footer>
         <p>© 2025 Caravana da Boa Viagem. Todos os direitos reservados.</p>
     </footer>
 
+    <div id="popup" class="popup">
+        <div class="popup-content">
+            <div class="popup-imagens">
+                <img id="popup-imagem-principal" src="" alt="Imagem do local">
+                <div class="popup-navegacao">
+                    <button id="popup-anterior">&#10094;</button>
+                    <button id="popup-proximo">&#10095;</button>
+                </div>
+            </div>
+            <div class="popup-info">
+                <h2 id="popup-nome"></h2>
+                <p id="popup-descricao"></p>
+                <p><strong>Data de Saída:</strong> <span id="popup-data"></span></p>
+                <p><strong>Horário de Saída:</strong> <span id="popup-horario"></span></p>
+                <p><strong>Vagas Totais:</strong> <span id="popup-vagas-totais"></span></p>
+                <p><strong>Vagas Disponíveis:</strong> <span id="popup-vagas-disponiveis"></span></p>
+                <input type="number" id="quantidade-ingressos" placeholder="Quantidade de Ingressos" min="1">
+                <button id="popup-comprar">Comprar Ingresso</button>
+                <button id="popup-fechar">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pop-up de Edição de Caravana -->
+    <div id="popup-editar-caravana">
+        <h2>Editar Caravana</h2>
+        <form id="formulario-edicao">
+          <label for="editar-local">Local:</label>
+          <input type="text" id="editar-local" required>
+      
+          <label for="editar-preco">Preço:</label>
+          <input type="number" id="editar-preco">
+      
+          <label for="editar-data">Data:</label>
+          <input type="date" id="editar-data">
+      
+          <label for="editar-horarioSaida">Horário de Saída:</label>
+          <input type="time" id="editar-horarioSaida">
+      
+          <label for="editar-vagasTotais">Vagas Totais:</label>
+          <input type="number" id="editar-vagasTotais">
+      
+          <label for="editar-imagens">Imagens (URLs separadas por vírgula):</label>
+          <input type="text" id="editar-imagens" required>
+      
+          <label for="editar-descricao">Descrição:</label>
+          <textarea id="editar-descricao" required></textarea>
+      
+          <label>
+            <input type="checkbox" id="editar-confirmada"> Confirmada
+          </label>
+      
+          <label>
+            <input type="checkbox" id="editar-exibir-no-confira"> Exibir no "Confira"
+          </label>
+      
+          <button type="button" id="botao-salvar-edicao">Salvar</button>
+          <button type="button" id="botao-cancelar-edicao">Cancelar</button>
+        </form>
+      </div>
+
     <script src="js/roteiros.js" type="module"></script>
 </body>
+
 </html>

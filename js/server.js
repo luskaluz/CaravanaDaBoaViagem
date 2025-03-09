@@ -129,27 +129,31 @@ const verificarAdmin = async (req, res, next) => {
 
 
 // Rota para cadastrar caravanas
-app.post("/cadastrar-caravana", verificarAdmin, async (req, res) => {
-  const { uid, local, preco, data, horarioSaida, imagens, descricao } = req.body;
+app.post("/cadastrar-caravana", async (req, res) => {
+  const { uid, local, preco, data, horarioSaida, vagasTotais, imagens, descricao, confirmada } = req.body;
 
-  if (!local || !preco || !data || !horarioSaida || !imagens || !descricao) {
-    return res.status(400).json({ error: "Todos os campos são obrigatórios." });
+  if (!local || !preco || !data || !horarioSaida || !vagasTotais || !imagens || !descricao) {
+      return res.status(400).json({ error: "Todos os campos são obrigatórios." });
   }
 
   try {
-    const caravanaRef = await db.collection("caravanas").add({
-      local,
-      preco,
-      data,
-      horarioSaida,
-      imagens,
-      descricao,
-    });
+      const caravanaRef = await db.collection("caravanas").add({
+          local,
+          preco,
+          data,
+          horarioSaida,
+          vagasTotais,
+          vagasDisponiveis: vagasTotais,
+          imagens,
+          descricao,
+          confirmada: confirmada || false, // Padrão é false (não confirmada)
+          exibirNoConfira: true, // Define como true para exibir na seção "Confira!"
+      });
 
-    res.status(200).json({ message: "Caravana cadastrada com sucesso!", id: caravanaRef.id });
+      res.status(200).json({ message: "Caravana cadastrada com sucesso!", id: caravanaRef.id });
   } catch (error) {
-    console.error("Erro ao cadastrar caravana:", error);
-    res.status(500).json({ error: "Erro ao cadastrar caravana." });
+      console.error("Erro ao cadastrar caravana:", error);
+      res.status(500).json({ error: "Erro ao cadastrar caravana." });
   }
 });
 
@@ -160,7 +164,6 @@ app.get("/caravanas", async (req, res) => {
 
     caravanasSnapshot.forEach((doc) => {
       const data = doc.data();
-      console.log("Dados da caravana:", data); // Log para depuração
       caravanas.push({ id: doc.id, ...data });
     });
 
@@ -176,16 +179,117 @@ app.get("/caravanas/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const caravanaDoc = await db.collection("caravanas").doc(id).get();
+      const caravanaDoc = await db.collection("caravanas").doc(id).get();
 
-    if (!caravanaDoc.exists) {
-      return res.status(404).json({ error: "Caravana não encontrada." });
+      if (!caravanaDoc.exists) {
+          return res.status(404).json({ error: "Caravana não encontrada." });
+      }
+
+      res.status(200).json(caravanaDoc.data());
+  } catch (error) {
+      console.error("Erro ao buscar caravana:", error);
+      res.status(500).json({ error: "Erro ao buscar caravana." });
+  }
+});
+
+app.delete("/caravanas/:id", async (req, res) => {
+  const { id } = req.params;
+  const { uid } = req.body; // UID do usuário logado
+
+  try {
+    // Verifica se o usuário é admin
+    const userDoc = await db.collection("users").doc(uid).get();
+    if (!userDoc.exists || userDoc.data().email !== "adm@adm.com") {
+      return res.status(403).json({ error: "Acesso negado. Somente administradores podem excluir caravanas." });
     }
 
-    res.status(200).json(caravanaDoc.data());
+    // Exclui a caravana
+    await db.collection("caravanas").doc(id).delete();
+    res.status(200).json({ message: "Caravana excluída com sucesso!" });
   } catch (error) {
-    console.error("Erro ao buscar caravana:", error);
-    res.status(500).json({ error: "Erro ao buscar caravana." });
+    console.error("Erro ao excluir caravana:", error);
+    res.status(500).json({ error: "Erro ao excluir caravana." });
+  }
+});
+
+// Rota para comprar ingressos
+app.post("/comprar-ingresso", async (req, res) => {
+  const { caravanaId, usuarioId, usuarioEmail, quantidade } = req.body;
+
+  try {
+      const caravanaRef = db.collection("caravanas").doc(caravanaId);
+      const caravanaDoc = await caravanaRef.get();
+
+      if (!caravanaDoc.exists) {
+          return res.status(404).json({ error: "Caravana não encontrada." });
+      }
+
+      const caravana = caravanaDoc.data();
+
+      // Verifica se há vagas suficientes
+      if (caravana.vagasDisponiveis < quantidade) {
+          return res.status(400).json({ error: "Não há vagas suficientes." });
+      }
+
+      // Atualiza o número de vagas disponíveis
+      await caravanaRef.update({
+          vagasDisponiveis: caravana.vagasDisponiveis - quantidade,
+      });
+
+      // Registra o usuário como participante da caravana
+      await db.collection("participantes").add({
+          caravanaId,
+          usuarioId,
+          usuarioEmail,
+          quantidade,
+      });
+
+      res.status(200).json({ message: "Ingresso(s) comprado(s) com sucesso!" });
+  } catch (error) {
+      console.error("Erro ao comprar ingresso:", error);
+      res.status(500).json({ error: "Erro ao comprar ingresso." });
+  }
+});
+
+app.post("/inscrever-viagem", async (req, res) => {
+  const { caravanaId, usuarioEmail } = req.body;
+
+  try {
+    // Registra o email do usuário para a viagem não confirmada
+    await db.collection("inscricoes").add({
+      caravanaId,
+      usuarioEmail,
+    });
+
+    res.status(200).json({ message: "Inscrição realizada com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao inscrever-se na viagem:", error);
+    res.status(500).json({ error: "Erro ao inscrever-se na viagem." });
+  }
+});
+
+app.put("/caravanas/:id", async (req, res) => {
+  const { id } = req.params;
+  const { local, preco, data, horarioSaida, vagasTotais, imagens, descricao, confirmada, exibirNoConfira } = req.body;
+
+  try {
+    const caravanaRef = db.collection("caravanas").doc(id);
+    await caravanaRef.update({
+      local,
+      preco,
+      data,
+      horarioSaida,
+      vagasTotais,
+      imagens,
+      descricao,
+      confirmada,
+      exibirNoConfira, // Atualiza o campo exibirNoConfira
+    });
+
+    res.status(200).json({ message: "Caravana atualizada com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao atualizar caravana:", error);
+    res.status(500).json({ error: "Erro ao atualizar caravana." });
   }
 });
 

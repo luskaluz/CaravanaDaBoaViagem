@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contato - Caravana da Baixada Santista</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body>
     <header>
@@ -54,15 +54,19 @@
             <button id="botao-logout">Logout</button>
         </div>
 
-        <!-- Formulário de cadastro de caravanas (visível apenas para o admin) -->
+        <!-- Formulário de cadastro de caravana (apenas para admin) -->
         <div id="form-caravana" class="formulario" style="display: none;">
             <h2>Cadastrar Caravana</h2>
             <input type="text" id="local" placeholder="Local da Viagem">
             <input type="text" id="preco" placeholder="Preço">
             <input type="date" id="data" placeholder="Data">
             <input type="time" id="horarioSaida" placeholder="Horário de Saída">
+            <input type="number" id="vagasTotais" placeholder="Número de Vagas">
             <input type="text" id="imagens" placeholder="URLs das Imagens (separadas por vírgula)">
             <textarea id="descricao" placeholder="Descrição"></textarea>
+            <label>
+                <input type="checkbox" id="confirmada"> Viagem Confirmada
+            </label>
             <button id="botao-cadastrar-caravana">Cadastrar Caravana</button>
         </div>
     </main>
@@ -73,6 +77,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-    <script src="js/script.js" type="module"></script>
+    <script src="./js/cadastro.js" type="module"></script>
 </body>
 </html>
