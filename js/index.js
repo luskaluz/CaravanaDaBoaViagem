@@ -80,9 +80,8 @@ const carregarViagensNaoConfirmadas = async () => {
       const resposta = await fetch("/caravanas");
       const caravanas = await resposta.json();
 
-      // Filtra apenas as viagens não confirmadas que devem aparecer no "Confira"
       const viagensNaoConfirmadas = caravanas.filter(
-          (caravana) => !caravana.confirmada && caravana.exibirNoConfira
+          (caravana) => !caravana.confirmada
       );
 
       // Seleciona o container de eventos
@@ -116,37 +115,44 @@ const carregarViagensNaoConfirmadas = async () => {
 
 // Função para abrir o popup com detalhes da caravana
 window.abrirPopupConfira = async (id) => {
-  try {
-      const resposta = await fetch(`/caravanas/${id}`);
-      const caravana = await resposta.json();
+const usuario = auth.currentUser;
 
-      // Preenche o popup com os dados da caravana
-      document.getElementById("popup-confira-nome").textContent = caravana.local;
-      document.getElementById("popup-confira-descricao").textContent = caravana.descricao;
+if (!usuario) {
+  alert("Você precisa estar logado para ver os detalhes da caravana.");
+  return;
+}
 
-      // Exibe a primeira imagem (se houver)
-      if (caravana.imagens && caravana.imagens.length > 0) {
-          document.getElementById("popup-confira-imagem-principal").src = caravana.imagens[0];
-      }
+try {
+  const resposta = await fetch(`/caravanas/${id}`);
+  const caravana = await resposta.json();
 
-      // Exibe o popup
-      document.getElementById("popup-confira").style.display = "flex";
-  } catch (error) {
-      console.error("Erro ao abrir popup:", error);
-      alert("Erro ao carregar detalhes da caravana.");
+  // Preenche o popup com os dados da caravana
+  document.getElementById("popup-confira-nome").textContent = caravana.local;
+  document.getElementById("popup-confira-descricao").textContent = caravana.descricao;
+
+  // Exibe a primeira imagem (se houver)
+  if (caravana.imagens && caravana.imagens.length > 0) {
+    document.getElementById("popup-confira-imagem-principal").src = caravana.imagens[0];
   }
+
+  // Armazena o ID da caravana no popup para uso posterior
+  document.getElementById("popup-confira").setAttribute("data-caravana-id", id);
+
+  // Verifica se o usuário está inscrito para notificações
+  const inscricaoResposta = await fetch(`/verificar-inscricao/${id}/${usuario.uid}`);
+  const inscricaoDados = await inscricaoResposta.json();
+
+  const botaoNotificar = document.getElementById("popup-confira-notificar");
+  botaoNotificar.setAttribute("data-inscrito", inscricaoDados.inscrito);
+  botaoNotificar.textContent = inscricaoDados.inscrito ? "Não Receber Notificação" : "Receber Notificação";
+
+  // Exibe o popup
+  document.getElementById("popup-confira").style.display = "flex";
+} catch (error) {
+  console.error("Erro ao abrir popup:", error);
+  alert("Erro ao carregar detalhes da caravana.");
+}
 };
-
-const fecharPopupConfira = () => {
-  document.getElementById("popup-confira").style.display = "none";
-};
-
-document.getElementById("popup-confira-fechar").addEventListener("click", fecharPopupConfira);
-document.getElementById("popup-confira-notificar").addEventListener("click", () => {
-  alert("Você será notificado quando esta viagem for confirmada!");
-  fecharPopupConfira();
-});
-
 
 // Função para inscrever o usuário para receber notificações
 const inscreverParaNotificacao = async (caravanaId) => {
@@ -157,6 +163,9 @@ const inscreverParaNotificacao = async (caravanaId) => {
     return;
   }
 
+  const botaoNotificar = document.getElementById("popup-confira-notificar");
+  const inscrito = botaoNotificar.getAttribute("data-inscrito") === "true";
+
   try {
     const resposta = await fetch("/inscrever-viagem", {
       method: "POST",
@@ -165,19 +174,24 @@ const inscreverParaNotificacao = async (caravanaId) => {
       },
       body: JSON.stringify({
         caravanaId,
+        usuarioId: usuario.uid,
         usuarioEmail: usuario.email,
+        inscrever: !inscrito, // Envia o estado oposto ao atual
       }),
     });
 
     const dados = await resposta.json();
     if (resposta.ok) {
-      alert("Inscrição realizada com sucesso! Você receberá uma notificação quando a viagem for confirmada.");
+      // Atualiza o estado do botão
+      botaoNotificar.setAttribute("data-inscrito", !inscrito);
+      botaoNotificar.textContent = inscrito ? "Receber Notificação" : "Não Receber Notificação";
+      alert(inscrito ? "Você não recebera mais notificações dessa caravana" : "Você recebera mais notificações dessa caravana");
     } else {
-      alert("Erro ao se inscrever: " + dados.error);
+      alert("Erro ao atualizar inscrição: " + dados.error);
     }
   } catch (error) {
-    console.error("Erro ao se inscrever:", error);
-    alert("Erro ao se inscrever. Tente novamente mais tarde.");
+    console.error("Erro ao atualizar inscrição:", error);
+    alert("Erro ao atualizar inscrição. Tente novamente mais tarde.");
   }
 };
 
@@ -185,8 +199,22 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarCarrossel();
   carregarViagensNaoConfirmadas();
 });
-document.getElementById("popup-confira-fechar").addEventListener("click", fecharPopupConfira);
+
+
+
+// Evento de clique no botão "Receber Notificação"
 document.getElementById("popup-confira-notificar").addEventListener("click", () => {
-    alert("Você será notificado quando esta viagem for confirmada!");
-    fecharPopupConfira();
+  const caravanaId = document.getElementById("popup-confira").getAttribute("data-caravana-id");
+  if (caravanaId) {
+    inscreverParaNotificacao(caravanaId);
+  } else {
+    alert("Erro: ID da caravana não encontrado.");
+  }
 });
+
+
+const fecharPopupConfira = () => {
+  document.getElementById("popup-confira").style.display = "none";
+};
+
+document.getElementById("popup-confira-fechar").addEventListener("click", fecharPopupConfira);

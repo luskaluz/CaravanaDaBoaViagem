@@ -18,6 +18,7 @@ firebaseAdmin.initializeApp({
 const auth = firebaseAdmin.auth();
 const db = firebaseAdmin.firestore();
 
+app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "../")));
 
@@ -103,33 +104,32 @@ const verificarAdmin = async (req, res, next) => {
   }
 };
 
-
-// Rota para cadastrar caravanas
 app.post("/cadastrar-caravana", async (req, res) => {
-  const { uid, local, preco, data, horarioSaida, vagasTotais, imagens, descricao, confirmada } = req.body;
+  const { local, preco, data, horarioSaida, vagasTotais, imagens, descricao, status } = req.body;
 
-  if (!local || !preco || !data || !horarioSaida || !vagasTotais || !imagens || !descricao) {
-      return res.status(400).json({ error: "Todos os campos são obrigatórios." });
+  // Campos obrigatórios
+  if (!local || !descricao) {
+    return res.status(400).json({ error: "Local e descrição são obrigatórios." });
   }
 
   try {
-      const caravanaRef = await db.collection("caravanas").add({
-          local,
-          preco,
-          data,
-          horarioSaida,
-          vagasTotais,
-          vagasDisponiveis: vagasTotais,
-          imagens,
-          descricao,
-          confirmada: confirmada || false, // Padrão é false (não confirmada)
-          exibirNoConfira: true, // Define como true para exibir na seção "Confira!"
-      });
+    const caravanaRef = await db.collection("caravanas").add({
+      local,
+      preco: preco === "nulo" ? null : preco, // Converte "nulo" para null
+      data: data === "nulo" ? null : data, // Converte "nulo" para null
+      horarioSaida: horarioSaida === "nulo" ? null : horarioSaida, // Converte "nulo" para null
+      vagasTotais: vagasTotais === "nulo" ? null : parseInt(vagasTotais), // Converte "nulo" para null
+      vagasDisponiveis: vagasTotais === "nulo" ? 0 : parseInt(vagasTotais), // Define como 0 se vagasTotais for "nulo"
+      imagens: imagens || [], // Campo opcional (array vazio se não houver imagens)
+      descricao,
+      status: status || "notificacao", // Define como "notificacao" se estiver vazio
+      exibirNoConfira: true,
+    });
 
-      res.status(200).json({ message: "Caravana cadastrada com sucesso!", id: caravanaRef.id });
+    res.status(200).json({ message: "Caravana cadastrada com sucesso!", id: caravanaRef.id });
   } catch (error) {
-      console.error("Erro ao cadastrar caravana:", error);
-      res.status(500).json({ error: "Erro ao cadastrar caravana." });
+    console.error("Erro ao cadastrar caravana:", error);
+    res.status(500).json({ error: "Erro ao cadastrar caravana." });
   }
 });
 
@@ -150,23 +150,24 @@ app.get("/caravanas", async (req, res) => {
   }
 });
 
-// Rota para buscar caravana por ID
 app.get("/caravanas/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-      const caravanaDoc = await db.collection("caravanas").doc(id).get();
+    const caravanaDoc = await db.collection("caravanas").doc(id).get();
 
-      if (!caravanaDoc.exists) {
-          return res.status(404).json({ error: "Caravana não encontrada." });
-      }
+    if (!caravanaDoc.exists) {
+      return res.status(404).json({ error: "Caravana não encontrada." });
+    }
 
-      res.status(200).json(caravanaDoc.data());
+    const caravana = caravanaDoc.data();
+    res.status(200).json({ id: caravanaDoc.id, ...caravana });
   } catch (error) {
-      console.error("Erro ao buscar caravana:", error);
-      res.status(500).json({ error: "Erro ao buscar caravana." });
+    console.error("Erro ao buscar caravana:", error);
+    res.status(500).json({ error: "Erro ao buscar caravana." });
   }
 });
+
 
 app.delete("/caravanas/:id", async (req, res) => {
   const { id } = req.params;
@@ -227,26 +228,42 @@ app.post("/comprar-ingresso", async (req, res) => {
   }
 });
 
+
 app.post("/inscrever-viagem", async (req, res) => {
-  const { caravanaId, usuarioEmail } = req.body;
+  const { caravanaId, usuarioId, usuarioEmail, inscrever } = req.body;
 
   try {
-    // Registra o email do usuário para a viagem não confirmada
-    await db.collection("inscricoes").add({
-      caravanaId,
-      usuarioEmail,
-    });
+    if (inscrever) {
+      // Inscreve o usuário
+      await db.collection("inscricoes").add({
+        caravanaId,
+        usuarioId,
+        usuarioEmail,
+      });
+    } else {
+      // Remove a inscrição do usuário
+      const inscricaoSnapshot = await db.collection("inscricoes")
+        .where("caravanaId", "==", caravanaId)
+        .where("usuarioId", "==", usuarioId)
+        .get();
 
-    res.status(200).json({ message: "Inscrição realizada com sucesso!" });
+      inscricaoSnapshot.forEach(async (doc) => {
+        await doc.ref.delete();
+      });
+    }
+
+    res.status(200).json({ message: "Inscrição atualizada com sucesso!" });
   } catch (error) {
-    console.error("Erro ao inscrever-se na viagem:", error);
-    res.status(500).json({ error: "Erro ao inscrever-se na viagem." });
+    console.error("Erro ao atualizar inscrição:", error);
+    res.status(500).json({ error: "Erro ao atualizar inscrição." });
   }
 });
 
 app.put("/caravanas/:id", async (req, res) => {
   const { id } = req.params;
-  const { local, preco, data, horarioSaida, vagasTotais, imagens, descricao, confirmada, exibirNoConfira } = req.body;
+  const { local, preco, data, horarioSaida, vagasTotais, imagens, descricao, status } = req.body;
+
+  console.log("Dados recebidos para atualização:", { id, local, preco, data, horarioSaida, vagasTotais, imagens, descricao, status });
 
   try {
     const caravanaRef = db.collection("caravanas").doc(id);
@@ -258,10 +275,10 @@ app.put("/caravanas/:id", async (req, res) => {
       vagasTotais,
       imagens,
       descricao,
-      confirmada,
-      exibirNoConfira, // Atualiza o campo exibirNoConfira
+      status,
     });
 
+    console.log("Caravana atualizada com sucesso:", id);
     res.status(200).json({ message: "Caravana atualizada com sucesso!" });
   } catch (error) {
     console.error("Erro ao atualizar caravana:", error);
@@ -281,10 +298,12 @@ app.get("/caravanas/:id/participantes", async (req, res) => {
     const participantes = [];
     for (const doc of participantesSnapshot.docs) {
       const participante = doc.data();
-      // Busca o nome do usuário no Firestore
+      
+      // Busca o nome e o telefone do usuário no Firestore
       const userDoc = await db.collection("users").doc(participante.usuarioId).get();
       if (userDoc.exists) {
         participante.nome = userDoc.data().nome; // Adiciona o nome ao objeto do participante
+        participante.telefone = userDoc.data().telefone; // Adiciona o telefone ao objeto do participante
       }
       participantes.push(participante);
     }
@@ -293,6 +312,186 @@ app.get("/caravanas/:id/participantes", async (req, res) => {
   } catch (error) {
     console.error("Erro ao buscar participantes:", error);
     res.status(500).json({ error: "Erro ao buscar participantes." });
+  }
+});
+
+// Rota para buscar caravanas nas quais o usuário está registrado
+app.get("/caravanas-registradas/:usuarioId", async (req, res) => {
+  const { usuarioId } = req.params;
+
+  try {
+    const participantesSnapshot = await db.collection("participantes")
+      .where("usuarioId", "==", usuarioId)
+      .get();
+
+    const caravanasRegistradas = [];
+    for (const doc of participantesSnapshot.docs) {
+      const participante = doc.data();
+      const caravanaDoc = await db.collection("caravanas").doc(participante.caravanaId).get();
+      if (caravanaDoc.exists) {
+        caravanasRegistradas.push({ id: caravanaDoc.id, ...caravanaDoc.data() });
+      }
+    }
+
+    res.status(200).json(caravanasRegistradas);
+  } catch (error) {
+    console.error("Erro ao buscar caravanas registradas:", error);
+    res.status(500).json({ error: "Erro ao buscar caravanas registradas." });
+  }
+});
+
+// Rota para buscar caravanas para as quais o usuário solicitou notificações
+app.get("/caravanas-notificacoes/:usuarioEmail", async (req, res) => {
+  const { usuarioEmail } = req.params;
+
+  try {
+    // Busca as inscrições do usuário
+    const inscricoesSnapshot = await db.collection("inscricoes")
+      .where("usuarioEmail", "==", usuarioEmail)
+      .get();
+
+    const caravanasNotificacoes = [];
+    for (const doc of inscricoesSnapshot.docs) {
+      const inscricao = doc.data();
+      const caravanaDoc = await db.collection("caravanas").doc(inscricao.caravanaId).get();
+      if (caravanaDoc.exists) {
+        const caravana = caravanaDoc.data();
+        // Filtra apenas caravanas com status "nao-confirmada"
+        if (caravana.status === "nao-confirmada") {
+          caravanasNotificacoes.push({ id: caravanaDoc.id, ...caravana });
+        }
+      }
+    }
+
+    res.status(200).json(caravanasNotificacoes);
+  } catch (error) {
+    console.error("Erro ao buscar caravanas para notificações:", error);
+    res.status(500).json({ error: "Erro ao buscar caravanas para notificações." });
+  }
+});
+
+app.get("/caravanas-notificacoes/:usuarioEmail", async (req, res) => {
+  const { usuarioEmail } = req.params;
+
+  try {
+    // Busca as inscrições do usuário
+    const inscricoesSnapshot = await db.collection("inscricoes")
+      .where("usuarioEmail", "==", usuarioEmail)
+      .get();
+
+    const caravanasNotificacoes = [];
+    for (const doc of inscricoesSnapshot.docs) {
+      const inscricao = doc.data();
+      const caravanaDoc = await db.collection("caravanas").doc(inscricao.caravanaId).get();
+      if (caravanaDoc.exists) {
+        caravanasNotificacoes.push({ id: caravanaDoc.id, ...caravanaDoc.data() });
+      }
+    }
+
+    res.status(200).json(caravanasNotificacoes);
+  } catch (error) {
+    console.error("Erro ao buscar caravanas para notificações:", error);
+    res.status(500).json({ error: "Erro ao buscar caravanas para notificações." });
+  }
+});
+
+app.get("/verificar-inscricao/:caravanaId/:usuarioId", async (req, res) => {
+  const { caravanaId, usuarioId } = req.params;
+
+  try {
+    const inscricaoSnapshot = await db.collection("inscricoes")
+      .where("caravanaId", "==", caravanaId)
+      .where("usuarioId", "==", usuarioId)
+      .get();
+
+    res.status(200).json({ inscrito: !inscricaoSnapshot.empty });
+  } catch (error) {
+    console.error("Erro ao verificar inscrição:", error);
+    res.status(500).json({ error: "Erro ao verificar inscrição." });
+  }
+});
+
+app.put("/confirmar-caravana/:id", async (req, res) => {
+  const { id } = req.params;
+  const { preco, data, horarioSaida, vagasTotais, status } = req.body;
+
+  try {
+    const caravanaRef = db.collection("caravanas").doc(id);
+
+    // Verifica se a caravana existe
+    const caravanaDoc = await caravanaRef.get();
+    if (!caravanaDoc.exists) {
+      return res.status(404).json({ message: "Caravana não encontrada." });
+    }
+ 
+    // Atualiza os campos e o status
+    await caravanaRef.update({
+      preco,
+      data,
+      horarioSaida,
+      vagasTotais,
+      vagasDisponiveis: vagasTotais, // Define as vagas disponíveis como o total de vagas
+      status,
+      exibirNoConfira: false,
+    });
+
+    res.status(200).json({ message: "Caravana confirmada com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao confirmar caravana:", error);
+    res.status(500).json({ error: "Erro ao confirmar caravana." });
+  }
+});
+
+// Endpoint para cancelar uma caravana
+app.put("/cancelar-caravana/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`Tentando cancelar caravana com ID: ${id}`);
+
+    // Referência ao documento da caravana no Firestore
+    const caravanaRef = db.collection("caravanas").doc(id);
+
+    // Verifica se a caravana existe
+    const caravanaDoc = await caravanaRef.get();
+    if (!caravanaDoc.exists) {
+      console.log("Caravana não encontrada no Firestore.");
+      return res.status(404).json({ message: "Caravana não encontrada." });
+    }
+
+    // Atualiza o status da caravana para "cancelada"
+    await caravanaRef.update({
+      status: "cancelada",
+    });
+
+    console.log("Caravana cancelada com sucesso.");
+
+    res.status(200).json({ message: "Caravana cancelada com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao cancelar caravana:", error);
+    res.status(500).json({ message: "Erro ao cancelar caravana.", error: error.message });
+  }
+});
+
+
+app.get("/caravanas-por-status/:status", async (req, res) => {
+  const { status } = req.params;
+  console.log(`Recebida requisição para caravanas com status: ${status}`);
+
+  try {
+    const caravanasSnapshot = await db.collection("caravanas")
+      .where("status", "==", status)
+      .get();
+
+    const caravanas = [];
+    caravanasSnapshot.forEach((doc) => {
+      caravanas.push({ id: doc.id, ...doc.data() });
+    });
+
+    console.log(`Caravanas encontradas: ${caravanas.length}`);
+    res.status(200).json(caravanas);
+  } catch (error) {
+    console.error("Erro ao buscar caravanas por status:", error);
+    res.status(500).json({ error: "Erro ao buscar caravanas por status." });
   }
 });
 

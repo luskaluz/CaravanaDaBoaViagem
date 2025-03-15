@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
@@ -29,11 +28,22 @@ const formatarPreco = (preco) => {
   }).format(preco);
 };
 
-// Função para abrir popup com detalhes da caravana
 const abrirPopup = async (id) => {
   try {
+    console.log(`Tentando buscar caravana com ID: ${id}`); // Log do ID da caravana
     const resposta = await fetch(`/caravanas/${id}`);
-    const caravana = await resposta.json();
+
+    // Verifica se a resposta é um JSON válido
+    const contentType = resposta.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      console.error("Resposta não é um JSON válido. Content-Type:", contentType);
+      const textoResposta = await resposta.text(); // Lê o corpo da resposta como texto
+      console.error("Conteúdo da resposta:", textoResposta); // Log do conteúdo da resposta
+      throw new Error("Resposta não é um JSON válido.");
+    }
+
+    const caravana = await resposta.json(); // Converte a resposta para JSON
+    console.log("Caravana recebida:", caravana); // Log da caravana recebida
 
     // Define o ID da caravana no popup
     document.getElementById("popup").setAttribute("data-caravana-id", id);
@@ -42,19 +52,42 @@ const abrirPopup = async (id) => {
     document.getElementById("popup-nome").textContent = caravana.local;
     document.getElementById("popup-descricao").textContent = caravana.descricao;
 
-    // Oculta número de lugares e botão de compra se a viagem não estiver confirmada
-    if (!caravana.confirmada) {
-      document.getElementById("popup-vagas-totais").style.display = "none";
-      document.getElementById("popup-vagas-disponiveis").style.display = "none";
-      document.getElementById("quantidade-ingressos").style.display = "none";
-      document.getElementById("popup-comprar").style.display = "none";
-    } else {
-      document.getElementById("popup-vagas-totais").style.display = "block";
-      document.getElementById("popup-vagas-disponiveis").style.display = "block";
-      document.getElementById("quantidade-ingressos").style.display = "block";
-      document.getElementById("popup-comprar").style.display = "block";
+    // Verifica o status da caravana
+    if (caravana.status === "notificacao") {
+      // Oculta campos específicos para caravanas com status "notificacao"
+      document.getElementById("popup-data").parentElement.style.display = "none"; // Oculta o campo Data de Saída
+      document.getElementById("popup-horario").parentElement.style.display = "none"; // Oculta o campo Horário de Saída
+      document.getElementById("popup-vagas-totais").parentElement.style.display = "none"; // Oculta o campo Vagas Totais
+      document.getElementById("popup-vagas-disponiveis").parentElement.style.display = "none"; // Oculta o campo Vagas Disponíveis
+      document.getElementById("comprar-ingressos-container").style.display = "none"; // Oculta o campo "Comprar ingressos"
+      document.getElementById("popup-comprar").style.display = "none"; // Oculta o botão Comprar Ingresso
+      document.getElementById("popup-assinar-notificacao").style.display = "block"; // Mostra o botão de assinar notificação
+    } else if (caravana.status === "confirmada") {
+      // Exibe todos os campos para caravanas confirmadas
+      document.getElementById("popup-data").parentElement.style.display = "block"; // Exibe o campo Data de Saída
+      document.getElementById("popup-horario").parentElement.style.display = "block"; // Exibe o campo Horário de Saída
+      document.getElementById("popup-vagas-totais").parentElement.style.display = "block"; // Exibe o campo Vagas Totais
+      document.getElementById("popup-vagas-disponiveis").parentElement.style.display = "block"; // Exibe o campo Vagas Disponíveis
+      document.getElementById("comprar-ingressos-container").style.display = "flex"; // Exibe o campo "Comprar ingressos"
+      document.getElementById("popup-comprar").style.display = "block"; // Exibe o botão Comprar Ingresso
+      document.getElementById("popup-assinar-notificacao").style.display = "none"; // Oculta o botão de assinar notificação
+
+      // Preenche os campos com os dados da caravana
+      document.getElementById("popup-data").textContent = caravana.data || "N/A";
+      document.getElementById("popup-horario").textContent = caravana.horarioSaida || "N/A";
       document.getElementById("popup-vagas-totais").textContent = caravana.vagasTotais || "N/A";
-      document.getElementById("popup-vagas-disponiveis").textContent = caravana.vagasDisponiveis || "N/A";
+
+      // Trata o caso de "Vagas Disponíveis"
+      const vagasDisponiveis = caravana.vagasDisponiveis ?? "N/A"; // Usa "N/A" se for null/undefined
+      document.getElementById("popup-vagas-disponiveis").textContent = vagasDisponiveis === 0 ? 0 : vagasDisponiveis;
+
+      // Destaca se não houver vagas
+      const vagasDisponiveisElement = document.getElementById("popup-vagas-disponiveis");
+      if (vagasDisponiveis === 0) {
+        vagasDisponiveisElement.classList.add("sem-vagas");
+      } else {
+        vagasDisponiveisElement.classList.remove("sem-vagas");
+      }
     }
 
     // Verifica se há imagens e exibe a primeira
@@ -74,7 +107,6 @@ const abrirPopup = async (id) => {
     alert("Erro ao carregar detalhes da caravana.");
   }
 };
-
 // Função para navegar entre as imagens
 const navegarImagem = (direcao) => {
   if (direcao === "anterior") {
@@ -172,42 +204,48 @@ const excluirCaravana = async (id) => {
   }
 };
 
-
-// Função para abrir o pop-up de edição
 const abrirPopupEdicao = (caravana) => {
   // Preenche o formulário de edição com os dados da caravana
   document.getElementById("editar-local").value = caravana.local;
-  document.getElementById("editar-preco").value = caravana.preco;
-  document.getElementById("editar-data").value = caravana.data;
-  document.getElementById("editar-horarioSaida").value = caravana.horarioSaida;
-  document.getElementById("editar-vagasTotais").value = caravana.vagasTotais;
-  document.getElementById("editar-imagens").value = caravana.imagens.join(",");
+  document.getElementById("editar-preco").value = caravana.preco || "";
+  document.getElementById("editar-data").value = caravana.data || "";
+  document.getElementById("editar-horarioSaida").value = caravana.horarioSaida || "";
+  document.getElementById("editar-vagasTotais").value = caravana.vagasTotais || "";
+  document.getElementById("editar-imagens").value = caravana.imagens ? caravana.imagens.join(",") : "";
   document.getElementById("editar-descricao").value = caravana.descricao;
-  document.getElementById("editar-confirmada").checked = caravana.confirmada;
+  document.getElementById("editar-status").value = caravana.status || "notificacao";
 
-  // Armazena o ID da caravana no pop-up de edição
+  // Armazena o ID da caravana no popup de edição
   document.getElementById("popup-editar-caravana").setAttribute("data-caravana-id", caravana.id);
 
-  // Exibe o pop-up de edição
+  // Exibe o popup de edição
   document.getElementById("popup-editar-caravana").style.display = "flex";
 };
 
-// Função para fechar o pop-up de edição
 const fecharPopupEdicao = () => {
   document.getElementById("popup-editar-caravana").style.display = "none";
 };
 
-// Função para salvar as alterações da caravana
 const salvarEdicao = async (id) => {
   const local = document.getElementById("editar-local").value;
   const preco = document.getElementById("editar-preco").value || null;
   const data = document.getElementById("editar-data").value || null;
   const horarioSaida = document.getElementById("editar-horarioSaida").value || null;
   const vagasTotais = parseInt(document.getElementById("editar-vagasTotais").value) || null;
-  const imagens = document.getElementById("editar-imagens").value.split(",");
+  const imagens = document.getElementById("editar-imagens").value.split(",").filter(url => url.trim() !== "");
   const descricao = document.getElementById("editar-descricao").value;
-  const confirmada = document.getElementById("editar-confirmada").checked;
-  const exibirNoConfira = document.getElementById("editar-exibir-no-confira").checked; // Certifique-se de que esse campo existe no formulário
+  const status = document.getElementById("editar-status").value || "notificacao";
+
+  console.log("Dados enviados para atualização:", {
+    local,
+    preco,
+    data,
+    horarioSaida,
+    vagasTotais,
+    imagens,
+    descricao,
+    status,
+  });
 
   try {
     const resposta = await fetch(`/caravanas/${id}`, {
@@ -223,8 +261,7 @@ const salvarEdicao = async (id) => {
         vagasTotais,
         imagens,
         descricao,
-        confirmada,
-        exibirNoConfira, // Certifique-se de que esse campo está sendo enviado
+        status,
       }),
     });
 
@@ -232,7 +269,21 @@ const salvarEdicao = async (id) => {
     if (resposta.ok) {
       alert("Caravana atualizada com sucesso!");
       fecharPopupEdicao();
-      exibirCaravanas(); // Atualiza a lista de caravanas
+
+      // Recarrega a seção atual
+      const secaoAtual = document.querySelector(".secao-ativa");
+      if (secaoAtual) {
+        const secaoId = secaoAtual.id;
+        if (secaoId === "caravanas-todas-section") {
+          carregarTodasCaravanas();
+        } else if (secaoId === "caravanas-confirmadas-section") {
+          carregarCaravanasConfirmadas();
+        } else if (secaoId === "caravanas-nao-confirmadas-section") {
+          carregarCaravanasNaoConfirmadas();
+        } else if (secaoId === "caravanas-canceladas-section") {
+          carregarCaravanasCanceladas();
+        }
+      }
     } else {
       alert("Erro ao atualizar caravana: " + dados.error);
     }
@@ -241,8 +292,7 @@ const salvarEdicao = async (id) => {
     alert("Erro ao atualizar caravana: " + error.message);
   }
 };
-
-
+// Função para adicionar botões de admin
 const adicionarBotoesAdmin = (card, caravana) => {
   const usuario = auth.currentUser;
 
@@ -279,6 +329,7 @@ const adicionarBotoesAdmin = (card, caravana) => {
   }
 };
 
+// Função para ver participantes
 const verParticipantes = async (caravanaId) => {
   try {
     const resposta = await fetch(`/caravanas/${caravanaId}/participantes`);
@@ -289,57 +340,32 @@ const verParticipantes = async (caravanaId) => {
       return;
     }
 
-    // Cria o conteúdo do pop-up
-    const participantesLista = participantes.map((p) => `
+    // Exibe os participantes no popup
+    const participantesLista = document.getElementById("participantes-lista");
+    participantesLista.innerHTML = participantes.map((p) => `
       <div class="participante">
         <p><strong>Nome:</strong> ${p.nome || "N/A"}</p>
         <p><strong>Email:</strong> ${p.usuarioEmail}</p>
-        <p><strong>Quantidade de Ingressos:</strong> ${p.quantidade}</p>
+        <p><strong>Telefone:</strong> ${p.telefone || "N/A"}</p>
+        <p><strong>Ingressos Comprados:</strong> ${p.quantidade}</p>
       </div>
     `).join("");
 
-    const popupContent = `
-      <h2>Participantes da Caravana</h2>
-      <div class="lista-participantes">
-        ${participantesLista}
-      </div>
-      <div class="botoes-popup">
-        <button id="fechar-popup-participantes">Fechar</button>
-      </div>
-    `;
-
-    // Exibe o pop-up
-    const popup = document.createElement("div");
-    popup.className = "popup-participantes";
-    popup.innerHTML = `
-      <div class="popup-content">
-        ${popupContent}
-      </div>
-    `;
-
-    document.body.appendChild(popup);
-
-    // Fecha o pop-up ao clicar no botão
-    document.getElementById("fechar-popup-participantes").addEventListener("click", () => {
-      document.body.removeChild(popup);
-    });
+    // Abre o popup
+    document.getElementById("popup-ver-participantes").style.display = "flex";
   } catch (error) {
     console.error("Erro ao buscar participantes:", error);
     alert("Erro ao carregar participantes.");
   }
 };
 
-
+// Evento para salvar a edição
 document.getElementById("botao-salvar-edicao").addEventListener("click", () => {
-  // Recupera o ID da caravana do pop-up de edição
   const caravanaId = document.getElementById("popup-editar-caravana").getAttribute("data-caravana-id");
-
   if (!caravanaId) {
     alert("ID da caravana não encontrado.");
     return;
   }
-
-  // Chama a função para salvar a edição
   salvarEdicao(caravanaId);
 });
 
@@ -355,23 +381,37 @@ const exibirCaravanas = async () => {
     const container = document.getElementById("caravanas-container");
     container.innerHTML = ""; // Limpa o container antes de adicionar os cards
 
+    // Filtra caravanas que não estão canceladas
+    const caravanasAtivas = caravanas.filter(caravana => caravana.status !== "cancelada");
+
     // Verifica o usuário logado
     const usuario = auth.currentUser;
     console.log("Usuário logado:", usuario ? usuario.email : "Nenhum usuário logado");
 
-    caravanas.forEach((caravana) => {
+    caravanasAtivas.forEach((caravana) => {
       const card = document.createElement("div");
       card.className = "roteiro-card";
 
       // Verifica se o campo 'imagens' existe e tem pelo menos uma imagem
       const imagem = caravana.imagens && caravana.imagens.length > 0 ? caravana.imagens[0] : "caminho/para/imagem_padrao.jpg";
 
-      card.innerHTML = `
-        <img src="${imagem}" alt="${caravana.local}" />
-        <h4>${caravana.local}</h4>
-        <p class="preco-destaque">${formatarPreco(caravana.preco)}</p>
-        <button class="btn-ver-mais" data-id="${caravana.id}">Ver mais</button>
-      `;
+      // Define o conteúdo do card com base no status da caravana
+      if (caravana.status === "notificacao") {
+        card.innerHTML = `
+          <img src="${imagem}" alt="${caravana.local}" />
+          <h4>${caravana.local}</h4>
+          <p class="preco-destaque">Não confirmado</p> <!-- Substitui o valor da passagem por "Não confirmado" -->
+          <button class="btn-ver-mais" data-id="${caravana.id}">Ver mais</button>
+        `;
+      } else if (caravana.status === "confirmada") {
+        card.innerHTML = `
+          <img src="${imagem}" alt="${caravana.local}" />
+          <h4>${caravana.local}</h4>
+          <p class="preco-destaque">${formatarPreco(caravana.preco)}</p> <!-- Exibe o valor da passagem -->
+          <p><strong>Vagas Disponíveis:</strong> ${caravana.vagasDisponiveis }</p> <!-- Exibe o número de vagas disponíveis -->
+          <button class="btn-ver-mais" data-id="${caravana.id}">Ver mais</button>
+        `;
+      }
 
       // Adiciona os botões de editar e excluir apenas para o administrador
       adicionarBotoesAdmin(card, caravana);
@@ -383,6 +423,47 @@ const exibirCaravanas = async () => {
     alert("Erro ao carregar caravanas.");
   }
 };
+
+// Função para assinar notificação
+const assinarNotificacao = async (caravanaId) => {
+  const usuario = auth.currentUser;
+
+  if (!usuario) {
+    alert("Você precisa estar logado para assinar notificações.");
+    return;
+  }
+
+  try {
+    const resposta = await fetch("/inscrever-viagem", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        caravanaId,
+        usuarioId: usuario.uid,
+        usuarioEmail: usuario.email,
+        inscrever: true,
+      }),
+    });
+
+    const dados = await resposta.json();
+    if (resposta.ok) {
+      alert("Você foi inscrito para receber notificações sobre esta caravana!");
+    } else {
+      alert("Erro ao assinar notificação: " + dados.error);
+    }
+  } catch (error) {
+    console.error("Erro ao assinar notificação:", error);
+    alert("Erro ao assinar notificação: " + error.message);
+  }
+};
+
+// Evento para assinar notificação
+document.getElementById("popup-assinar-notificacao").addEventListener("click", () => {
+  const caravanaId = document.getElementById("popup").getAttribute("data-caravana-id");
+  assinarNotificacao(caravanaId);
+});
 
 // Monitora o estado de autenticação
 onAuthStateChanged(auth, (user) => {
@@ -425,3 +506,31 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("popup-proximo").addEventListener("click", () => navegarImagem("proximo"));
   document.getElementById("popup-fechar").addEventListener("click", fecharPopup);
 });
+
+// Event listener para fechar o popup de participantes
+document.getElementById("botao-fechar-popup-participantes").addEventListener("click", () => {
+document.getElementById("popup-ver-participantes").style.display = "none";
+});
+
+// Event listener para abrir o popup de participantes ao clicar no botão "Ver Participantes"
+document.addEventListener("click", (event) => {
+if (event.target.classList.contains("btn-ver-participantes")) {
+  const caravanaId = event.target.dataset.caravanaId;
+  verParticipantes(caravanaId);
+}
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -243,23 +243,6 @@ body {
     background-color: #0056b3;
 }
 
-#popup-editar-caravana {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 12px;
-    max-width: 500px;
-    width: 90%;
-    display: none; /* Oculta o pop-up por padrão */
-    flex-direction: column;
-    gap: 15px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    position: fixed; /* Centraliza o pop-up */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* Centraliza vertical e horizontalmente */
-    z-index: 1001; /* Garante que fique acima de outros elementos */
-}
-
 #popup-editar-caravana h2 {
     margin-top: 0;
     font-size: 1.5rem;
@@ -382,3 +365,80 @@ body {
 .botoes-popup button:hover {
     background-color: #d32f2f;
 }
+
+
+
+
+
+
+
+
+/* Container dos botões */
+.popup-botoes {
+    display: flex;
+    justify-content: flex-end; /* Alinha os botões à direita */
+    gap: 10px; /* Espaço entre os botões */
+    margin-top: 20px; /* Espaço acima dos botões */
+  }
+  
+  /* Estilo base para todos os botões */
+  .popup-botoes button {
+    padding: 8px 16px; /* Espaçamento interno menor */
+    border: none; /* Remove a borda padrão */
+    border-radius: 4px; /* Cantos arredondados */
+    cursor: pointer; /* Cursor de ponteiro ao passar o mouse */
+    font-size: 14px; /* Tamanho da fonte */
+    transition: background-color 0.3s ease; /* Transição suave de cor */
+  }
+  
+  /* Botão "Comprar Ingresso" */
+  #popup-comprar {
+    background-color: #007bff; /* Azul */
+    color: white; /* Texto branco */
+    margin-left: 10px; /* Espaço entre o input e o botão */
+  }
+  
+  #popup-comprar:hover {
+    background-color: #0056b3; /* Azul mais escuro ao passar o mouse */
+  }
+  
+  /* Botão "Assinar Notificação" */
+  #popup-assinar-notificacao {
+    background-color: #28a745; /* Verde */
+    color: white; /* Texto branco */
+  }
+  
+  #popup-assinar-notificacao:hover {
+    background-color: #218838; /* Verde mais escuro ao passar o mouse */
+  }
+  
+  /* Botão "Fechar" */
+  #popup-fechar {
+    background-color: #dc3545; /* Vermelho */
+    color: white; /* Texto branco */
+  }
+  
+  #popup-fechar:hover {
+    background-color: #c82333; /* Vermelho mais escuro ao passar o mouse */
+  }
+  
+  /* Margem interna do popup */
+  .popup-content {
+    padding: 20px; /* Margem interna */
+  }
+  
+  /* Container do input e botão "Comprar Ingresso" */
+  .popup-comprar-container {
+    display: flex;
+    align-items: center; /* Alinha o input e o botão verticalmente */
+    gap: 10px; /* Espaço entre o input e o botão */
+    margin-bottom: 10px; /* Espaço abaixo do container */
+  }
+  
+  /* Estilo do input de quantidade */
+  #quantidade-ingressos {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 250px; /* Largura fixa para o input */
+  }

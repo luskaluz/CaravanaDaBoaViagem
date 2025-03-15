@@ -16,7 +16,7 @@
                 <li><a href="sobre.html">Sobre</a></li>
                 <li><a href="roteiros.html">Roteiros</a></li>
                 <li><a href="galeria.html">Galeria</a></li>
-                <li><a href="cadastro.html">Contato</a></li>
+                <li><a href="cadastro.html">Cadastro</a></li>
             </ul>
         </nav>
     </header>
@@ -36,65 +36,106 @@
 
     <div id="popup" class="popup">
         <div class="popup-content">
-            <div class="popup-imagens">
-                <img id="popup-imagem-principal" src="" alt="Imagem do local">
-                <div class="popup-navegacao">
-                    <button id="popup-anterior">&#10094;</button>
-                    <button id="popup-proximo">&#10095;</button>
-                </div>
+          <div class="popup-imagens">
+            <img id="popup-imagem-principal" src="" alt="Imagem do local">
+            <div class="popup-navegacao">
+              <button id="popup-anterior">&#10094;</button>
+              <button id="popup-proximo">&#10095;</button>
             </div>
-            <div class="popup-info">
-                <h2 id="popup-nome"></h2>
-                <p id="popup-descricao"></p>
-                <p><strong>Data de Saída:</strong> <span id="popup-data"></span></p>
-                <p><strong>Horário de Saída:</strong> <span id="popup-horario"></span></p>
-                <p><strong>Vagas Totais:</strong> <span id="popup-vagas-totais"></span></p>
-                <p><strong>Vagas Disponíveis:</strong> <span id="popup-vagas-disponiveis"></span></p>
-                <input type="number" id="quantidade-ingressos" placeholder="Quantidade de Ingressos" min="1">
-                <button id="popup-comprar">Comprar Ingresso</button>
-                <button id="popup-fechar">Fechar</button>
+          </div>
+          <div class="popup-info">
+            <h2 id="popup-nome"></h2>
+            <p id="popup-descricao"></p>
+            <p><strong>Data de Saída:</strong> <span id="popup-data"></span></p>
+            <p><strong>Horário de Saída:</strong> <span id="popup-horario"></span></p>
+            <p><strong>Vagas Totais:</strong> <span id="popup-vagas-totais"></span></p>
+            <p><strong>Vagas Disponíveis:</strong> <span id="popup-vagas-disponiveis"></span></p>
+            
+            <!-- Campo "Comprar ingressos" -->
+            <div id="comprar-ingressos-container" class="comprar-ingressos">
+              <label for="quantidade-ingressos">Comprar ingressos:</label>
+              <input type="number" id="quantidade-ingressos" placeholder="Quantidade" min="1">
+            </div>
+      
+            <div class="popup-botoes">
+              <button id="popup-comprar">Comprar</button>
+              <button id="popup-assinar-notificacao" style="display: none;">Assinar Notificação</button>
+              <button id="popup-fechar">Fechar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <!-- Popup de Edição de Caravana -->
+    <div id="popup-editar-caravana" class="popup">
+        <div class="popup-content">
+            <div class="popup-content-body">
+                <h2>Editar Caravana</h2>
+                <form id="formulario-edicao">
+                    <div class="popup-form-group">
+                        <label for="editar-local">Local:</label>
+                        <input type="text" id="editar-local" required>
+                    </div>
+    
+                    <div class="popup-form-group">
+                        <label for="editar-preco">Preço:</label>
+                        <input type="number" id="editar-preco">
+                    </div>
+    
+                    <div class="popup-form-group">
+                        <label for="editar-data">Data:</label>
+                        <input type="date" id="editar-data">
+                    </div>
+    
+                    <div class="popup-form-group">
+                        <label for="editar-horarioSaida">Horário de Saída:</label>
+                        <input type="time" id="editar-horarioSaida">
+                    </div>
+    
+                    <div class="popup-form-group">
+                        <label for="editar-vagasTotais">Vagas Totais:</label>
+                        <input type="number" id="editar-vagasTotais">
+                    </div>
+    
+                    <div class="popup-form-group">
+                        <label for="editar-imagens">Imagens (URLs separadas por vírgula):</label>
+                        <input type="text" id="editar-imagens" required>
+                    </div>
+    
+                    <div class="popup-form-group">
+                        <label for="editar-descricao">Descrição:</label>
+                        <textarea id="editar-descricao" required></textarea>
+                    </div>
+    
+                    <div class="popup-form-group">
+                        <label for="editar-status">Status:</label>
+                        <select id="editar-status">
+                            <option value="notificacao">Notificação</option>
+                            <option value="confirmada">Confirmada</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+    
+            <div class="popup-content-footer">
+                <button type="button" id="botao-cancelar-edicao" class="btn-secundario">Cancelar</button>
+                <button type="button" id="botao-salvar-edicao" class="btn-primario">Salvar</button>
             </div>
         </div>
     </div>
 
-    <!-- Pop-up de Edição de Caravana -->
-    <div id="popup-editar-caravana">
-        <h2>Editar Caravana</h2>
-        <form id="formulario-edicao">
-          <label for="editar-local">Local:</label>
-          <input type="text" id="editar-local" required>
-      
-          <label for="editar-preco">Preço:</label>
-          <input type="number" id="editar-preco">
-      
-          <label for="editar-data">Data:</label>
-          <input type="date" id="editar-data">
-      
-          <label for="editar-horarioSaida">Horário de Saída:</label>
-          <input type="time" id="editar-horarioSaida">
-      
-          <label for="editar-vagasTotais">Vagas Totais:</label>
-          <input type="number" id="editar-vagasTotais">
-      
-          <label for="editar-imagens">Imagens (URLs separadas por vírgula):</label>
-          <input type="text" id="editar-imagens" required>
-      
-          <label for="editar-descricao">Descrição:</label>
-          <textarea id="editar-descricao" required></textarea>
-      
-          <label>
-            <input type="checkbox" id="editar-confirmada"> Confirmada
-          </label>
-      
-          <label>
-            <input type="checkbox" id="editar-exibir-no-confira"> Exibir no "Confira"
-          </label>
-      
-          <button type="button" id="botao-salvar-edicao">Salvar</button>
-          <button type="button" id="botao-cancelar-edicao">Cancelar</button>
-        </form>
-      </div>
-
+    <!-- Popup de Participantes -->
+    <div id="popup-ver-participantes" class="popup-participantes">
+        <div class="popup-content">
+            <h2>Participantes da Caravana</h2>
+            <div id="participantes-lista" class="lista-participantes">
+                <!-- Os participantes serão inseridos aqui dinamicamente -->
+            </div>
+            <div class="botoes-popup">
+                <button id="botao-fechar-popup-participantes">Fechar</button>
+            </div>
+        </div>
+    </div>
     <script src="js/roteiros.js" type="module"></script>
 </body>
 
