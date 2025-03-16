@@ -315,7 +315,6 @@ app.get("/caravanas/:id/participantes", async (req, res) => {
   }
 });
 
-// Rota para buscar caravanas nas quais o usuário está registrado
 app.get("/caravanas-registradas/:usuarioId", async (req, res) => {
   const { usuarioId } = req.params;
 
@@ -329,7 +328,11 @@ app.get("/caravanas-registradas/:usuarioId", async (req, res) => {
       const participante = doc.data();
       const caravanaDoc = await db.collection("caravanas").doc(participante.caravanaId).get();
       if (caravanaDoc.exists) {
-        caravanasRegistradas.push({ id: caravanaDoc.id, ...caravanaDoc.data() });
+        const caravana = caravanaDoc.data();
+        // Filtra caravanas que não estão canceladas
+        if (caravana.status !== "cancelada") {
+          caravanasRegistradas.push({ id: caravanaDoc.id, ...caravana });
+        }
       }
     }
 
@@ -340,7 +343,6 @@ app.get("/caravanas-registradas/:usuarioId", async (req, res) => {
   }
 });
 
-// Rota para buscar caravanas para as quais o usuário solicitou notificações
 app.get("/caravanas-notificacoes/:usuarioEmail", async (req, res) => {
   const { usuarioEmail } = req.params;
 
@@ -356,8 +358,8 @@ app.get("/caravanas-notificacoes/:usuarioEmail", async (req, res) => {
       const caravanaDoc = await db.collection("caravanas").doc(inscricao.caravanaId).get();
       if (caravanaDoc.exists) {
         const caravana = caravanaDoc.data();
-        // Filtra apenas caravanas com status "nao-confirmada"
-        if (caravana.status === "nao-confirmada") {
+        // Filtra apenas caravanas com status "notificacao"
+        if (caravana.status === "notificacao") {
           caravanasNotificacoes.push({ id: caravanaDoc.id, ...caravana });
         }
       }

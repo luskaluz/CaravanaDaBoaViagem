@@ -181,66 +181,91 @@ const validarTelefone = (telefone) => {
   return regexTelefone.test(telefone);
 };
 
-// Função para carregar caravanas registradas
-const carregarCaravanasRegistradas = async (usuarioId) => {
+const carregarCaravanasRegistradas = async (usuarioId, isAdmin = false) => {
   try {
     const resposta = await fetch(`/caravanas-registradas/${usuarioId}`);
     const caravanas = await resposta.json();
 
-    const container = document.getElementById("caravanas-registradas");
+    const container = document.getElementById("caravanas-registradas-container");
     if (!container) {
-      console.error("Elemento 'caravanas-registradas' não encontrado.");
+      console.error("Elemento 'caravanas-registradas-container' não encontrado.");
       return;
     }
 
     container.innerHTML = ""; // Limpa o container antes de adicionar os cards
 
     caravanas.forEach((caravana) => {
-      const card = criarCardCaravana(caravana);
+      const card = criarCardCaravana(caravana, isAdmin);
       container.appendChild(card);
     });
+
+    // Exibe a seção de caravanas registradas
+    exibirSecao("caravanas-registradas-section");
   } catch (error) {
     console.error("Erro ao carregar caravanas registradas:", error);
     alert("Erro ao carregar caravanas registradas.");
   }
 };
 
-// Função para carregar caravanas com notificações
 const carregarCaravanasNotificacoes = async (usuarioEmail) => {
   try {
     const resposta = await fetch(`/caravanas-notificacoes/${usuarioEmail}`);
     const caravanas = await resposta.json();
 
-    const container = document.getElementById("caravanas-notificacoes");
+    const container = document.getElementById("caravanas-notificacoes-container");
     if (!container) {
-      console.error("Elemento 'caravanas-notificacoes' não encontrado.");
+      console.error("Elemento 'caravanas-notificacoes-container' não encontrado.");
       return;
     }
 
     container.innerHTML = ""; // Limpa o container
 
-    // Título da seção
-    const tituloPrincipal = document.createElement("h2");
-    tituloPrincipal.textContent = "Caravanas com Notificações";
-    container.appendChild(tituloPrincipal);
-
-    // Container dos cards
-    const cardContainer = document.createElement("div");
-    cardContainer.className = "grid-caravanas";
-
-    // Adiciona os cards ao container
     caravanas.forEach((caravana) => {
-      const card = criarCardCaravana(caravana);
-      cardContainer.appendChild(card);
+      const card = criarCardCaravana(caravana, false); // false = usuário comum
+      container.appendChild(card);
     });
 
-    container.appendChild(cardContainer);
-
-    // Exibe a seção de caravanas
-    document.getElementById("caravanas-notificacoes-section").style.display = "block";
+    // Exibe a seção de caravanas com notificações
+    exibirSecao("caravanas-notificacoes-section");
   } catch (error) {
     console.error("Erro ao carregar caravanas com notificações:", error);
     alert("Erro ao carregar caravanas com notificações.");
+  }
+};
+
+const pararNotificacao = async (caravanaId) => {
+  const usuarioId = auth.currentUser?.uid;
+  const usuarioEmail = auth.currentUser?.email;
+
+  if (!usuarioId || !usuarioEmail) {
+    alert("Usuário não está logado.");
+    return;
+  }
+
+  try {
+    const resposta = await fetch("/inscrever-viagem", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        caravanaId,
+        usuarioId,
+        usuarioEmail,
+        inscrever: false, // Indica que o usuário quer parar de ser notificado
+      }),
+    });
+
+    const dados = await resposta.json();
+    if (resposta.ok) {
+      alert("Notificação removida com sucesso!");
+      carregarCaravanasNotificacoes(usuarioEmail); // Recarrega as caravanas com notificações
+    } else {
+      alert("Erro ao remover notificação: " + dados.error);
+    }
+  } catch (error) {
+    console.error("Erro ao remover notificação:", error);
+    alert("Erro ao remover notificação.");
   }
 };
 
@@ -290,11 +315,12 @@ const atualizarInterface = async (user) => {
     } else {
       adminNavegacao.style.display = "none"; // Oculta os botões do admin
       usuarioNavegacao.style.display = "block"; // Exibe os botões do usuário comum
-    }
 
-    // Carrega as caravanas registradas e as caravanas com notificações
-    carregarCaravanasRegistradas(user.uid);
-    carregarCaravanasNotificacoes(user.email);
+      // Carrega as caravanas registradas, notificações e canceladas
+      carregarCaravanasRegistradas(user.uid);
+      carregarCaravanasNotificacoes(user.email);
+      carregarCaravanasCanceladas(user.uid);
+    }
   } else {
     // Usuário não logado
     botoes.style.display = "flex"; // Mostra os botões de cadastro/login
@@ -306,6 +332,7 @@ const atualizarInterface = async (user) => {
     // Oculta as seções de caravanas
     document.getElementById("caravanas-registradas-section").style.display = "none";
     document.getElementById("caravanas-notificacoes-section").style.display = "none";
+    document.getElementById("caravanas-canceladas-section").style.display = "none";
   }
 };
 
@@ -558,7 +585,7 @@ const carregarCaravanasCanceladas = async () => {
   }
 };
 
-const criarCardCaravana = (caravana) => {
+const criarCardCaravana = (caravana, isAdmin = false) => {
   const card = document.createElement("div");
   card.className = "roteiro-card";
 
@@ -579,35 +606,42 @@ const criarCardCaravana = (caravana) => {
     <p>Participantes Atuais: ${participantesAtuais}</p>
     <p class="ocupacao">Ocupação: ${ocupacaoPercentual}%</p>
     <p>Status: ${caravana.status}</p>
-    ${caravana.status === "notificacao" ? `
+    ${caravana.status === "notificacao" && isAdmin ? `
       <button class="btn-confirmar" data-caravana-id="${caravana.id}">Confirmar</button>
       <button class="btn-cancelar" data-caravana-id="${caravana.id}">Cancelar</button>
     ` : ''}
-    ${caravana.status === "confirmada" ? `
+    ${caravana.status === "notificacao" && !isAdmin ? `
+      <button class="btn-parar-notificacao" data-caravana-id="${caravana.id}">Parar Notificação</button>
+    ` : ''}
+    ${caravana.status === "confirmada" && isAdmin ? `
       <button class="btn-cancelar" data-caravana-id="${caravana.id}">Cancelar</button>
       <button class="btn-ver-participantes" data-caravana-id="${caravana.id}">Ver Integrantes</button>
     ` : ''}
-    ${caravana.status === "cancelada" ? `
+    ${caravana.status === "cancelada" && isAdmin ? `
       <button class="btn-excluir" data-caravana-id="${caravana.id}">Excluir</button>
     ` : ''}
   `;
 
   // Adiciona eventos aos botões
-  if (caravana.status === "notificacao") {
+  if (caravana.status === "notificacao" && isAdmin) {
     card.querySelector(".btn-confirmar").addEventListener("click", () => {
       abrirPopupConfirmarCaravana(caravana.id);
     });
     card.querySelector(".btn-cancelar").addEventListener("click", () => {
       cancelarCaravana(caravana.id);
     });
-  } else if (caravana.status === "confirmada") {
+  } else if (caravana.status === "notificacao" && !isAdmin) {
+    card.querySelector(".btn-parar-notificacao").addEventListener("click", () => {
+      pararNotificacao(caravana.id);
+    });
+  } else if (caravana.status === "confirmada" && isAdmin) {
     card.querySelector(".btn-cancelar").addEventListener("click", () => {
       cancelarCaravana(caravana.id);
     });
     card.querySelector(".btn-ver-participantes").addEventListener("click", () => {
       verParticipantes(caravana.id);
     });
-  } else if (caravana.status === "cancelada") {
+  } else if (caravana.status === "cancelada" && isAdmin) {
     card.querySelector(".btn-excluir").addEventListener("click", () => {
       excluirCaravana(caravana.id);
     });
@@ -616,35 +650,35 @@ const criarCardCaravana = (caravana) => {
   return card;
 };
 
-const carregarCaravanas = async () => {
-  try {
-    const resposta = await fetch("/caravanas");
-    if (!resposta.ok) {
-      throw new Error(`Erro ao buscar caravanas: ${resposta.statusText}`);
-    }
+// const carregarCaravanas = async () => {
+//   try {
+//     const resposta = await fetch("/caravanas");
+//     if (!resposta.ok) {
+//       throw new Error(`Erro ao buscar caravanas: ${resposta.statusText}`);
+//     }
 
-    const caravanas = await resposta.json();
+//     const caravanas = await resposta.json();
 
-    const container = document.getElementById("caravanas-container");
-    if (!container) {
-      console.error("Elemento 'caravanas-container' não encontrado.");
-      return;
-    }
+//     const container = document.getElementById("caravanas-container");
+//     if (!container) {
+//       console.error("Elemento 'caravanas-container' não encontrado.");
+//       return;
+//     }
 
-    container.innerHTML = ""; // Limpa o container antes de adicionar os cards
+//     container.innerHTML = ""; // Limpa o container antes de adicionar os cards
 
-    caravanas.forEach((caravana) => {
-      const card = criarCardCaravana(caravana);
-      container.appendChild(card);
-    });
+//     caravanas.forEach((caravana) => {
+//       const card = criarCardCaravana(caravana);
+//       container.appendChild(card);
+//     });
 
-    // Exibe a seção de caravanas
-    document.getElementById("caravanas-section").style.display = "block";
-  } catch (error) {
-    console.error("Erro ao carregar caravanas:", error);
-    alert("Erro ao carregar caravanas.");
-  }
-};
+//     // Exibe a seção de caravanas
+//     document.getElementById("caravanas-section").style.display = "block";
+//   } catch (error) {
+//     console.error("Erro ao carregar caravanas:", error);
+//     alert("Erro ao carregar caravanas.");
+//   }
+// };
 
 const exibirSecao = (secaoId) => {
   const secoes = [
@@ -716,10 +750,9 @@ const excluirCaravana = async (id) => {
   }
 };
 
-// Event listener para o botão de confirmar caravana
+
 document.getElementById("botao-confirmar-caravana").addEventListener("click", confirmarCaravana);
 
-// Event listener para fechar o pop-up de confirmação
 document.getElementById("botao-fechar-popup-confirmar").addEventListener("click", fecharPopupConfirmarCaravana);
 
 // Event listeners

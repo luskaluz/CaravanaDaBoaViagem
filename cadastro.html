@@ -70,6 +70,7 @@
             <button id="botao-logout">Logout</button>
         </div>
 
+        <!-- Seção para exibir caravanas confirmadas -->
         <section id="caravanas-confirmadas-section" style="display: none;">
             <h2>Caravanas Confirmadas</h2>
         
@@ -114,7 +115,7 @@
             </div>
         </section>
 
-
+        <!-- Seção para exibir todas as caravanas -->
         <section id="caravanas-todas-section" style="display: none;">
             <h2>Todas as Caravanas</h2>
             <div class="grid-caravanas" id="caravanas-todas-container">
@@ -122,19 +123,33 @@
             </div>
         </section>
 
+        <!-- Seção para exibir caravanas registradas -->
+        <section id="caravanas-registradas-section" style="display: none;">
+            <h2>Minhas Caravanas</h2>
+            <div class="grid-caravanas" id="caravanas-registradas-container">
+                <!-- Caravanas registradas serão inseridas aqui dinamicamente -->
+            </div>
+        </section>
+
+        <!-- Seção para exibir caravanas com notificações -->
+        <section id="caravanas-notificacoes-section" style="display: none;">
+            <h2>Caravanas com Notificações</h2>
+            <div class="grid-caravanas" id="caravanas-notificacoes-container">
+                <!-- Caravanas com notificações serão inseridas aqui dinamicamente -->
+            </div>
+        </section>
+
+        <!-- Popup para criar caravana -->
         <div id="popup-criar-caravana" class="popup">
             <div class="popup-content">
                 <h2>Criar Caravana</h2>
                 <form id="formulario-criar-caravana">
                     <label for="local">Local:</label>
                     <input type="text" id="local" required>
-        
                     <label for="imagens">Links das Fotos (separados por vírgula):</label>
-                    <input type="text" id="imagens"  required>
-        
+                    <input type="text" id="imagens" required>
                     <label for="descricao">Descrição:</label>
-                    <textarea id="descricao"required></textarea>
-        
+                    <textarea id="descricao" required></textarea>
                     <div class="botoes-popup">
                         <button type="button" id="botao-cadastrar-caravana">Cadastrar</button>
                         <button type="button" id="botao-fechar-popup">Fechar</button>
@@ -142,23 +157,20 @@
                 </form>
             </div>
         </div>
-         
+
+        <!-- Popup para confirmar caravana -->
         <div id="popup-confirmar-caravana" class="popup">
             <div class="popup-content">
                 <h2>Confirmar Caravana</h2>
                 <form id="formulario-confirmar-caravana">
                     <label for="confirmar-preco">Preço:</label>
                     <input type="text" id="confirmar-preco" placeholder="Preço" required>
-        
                     <label for="confirmar-data">Data:</label>
                     <input type="date" id="confirmar-data" required>
-        
                     <label for="confirmar-horarioSaida">Horário de Saída:</label>
                     <input type="time" id="confirmar-horarioSaida" required>
-        
                     <label for="confirmar-vagasTotais">Número de Vagas:</label>
                     <input type="number" id="confirmar-vagasTotais" required>
-        
                     <div class="botoes-popup">
                         <button type="button" id="botao-confirmar-caravana">Confirmar</button>
                         <button type="button" id="botao-fechar-popup-confirmar">Fechar</button>
@@ -187,4 +199,4 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
     <script src="./js/cadastro.js" type="module"></script>
 </body>
-</html>
+</html> 
