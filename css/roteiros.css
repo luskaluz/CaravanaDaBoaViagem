@@ -19,6 +19,12 @@ body {
     color: #003662;
 }
 
+.roteiros-titulo{
+    font-size: 1.5rem;
+    margin: 2rem;
+    color: #003662;
+}
+
 .grid-roteiros {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
