@@ -33,7 +33,7 @@ const carregarCarrossel = async () => {
     console.log("Dados recebidos:", caravanas); // Verifique os dados no console
 
     // Filtra apenas as viagens confirmadas
-    const viagensConfirmadas = caravanas.filter((caravana) => caravana.confirmada);
+    const viagensConfirmadas = caravanas.filter((caravana) => caravana.status === "confirmada");
 
     // Seleciona o container do carrossel
     const container = document.getElementById("carrossel-container");
@@ -81,7 +81,7 @@ const carregarViagensNaoConfirmadas = async () => {
       const caravanas = await resposta.json();
 
       const viagensNaoConfirmadas = caravanas.filter(
-          (caravana) => !caravana.confirmada
+          (caravana) => caravana.status === "notificacao"
       );
 
       // Seleciona o container de eventos
@@ -185,7 +185,6 @@ const inscreverParaNotificacao = async (caravanaId) => {
       // Atualiza o estado do botão
       botaoNotificar.setAttribute("data-inscrito", !inscrito);
       botaoNotificar.textContent = inscrito ? "Receber Notificação" : "Não Receber Notificação";
-      alert(inscrito ? "Você não recebera mais notificações dessa caravana" : "Você recebera mais notificações dessa caravana");
     } else {
       alert("Erro ao atualizar inscrição: " + dados.error);
     }

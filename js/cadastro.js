@@ -116,62 +116,59 @@ const buscarDadosUsuario = async (uid) => {
   }
 };
 
-// Função para fazer logout
 const logout = async () => {
   try {
     await signOut(auth);
     alert("Logout realizado com sucesso!");
-    atualizarInterface(null);
+    localStorage.clear(); 
+    sessionStorage.clear(); 
+    window.location.reload(true); 
   } catch (error) {
     alert("Erro ao fazer logout: " + error.message);
   }
 };
 
+
 const cadastrarCaravana = async () => {
   const local = document.getElementById("local").value;
-  const preco = document.getElementById("preco").value || null; // Campo opcional
-  const data = document.getElementById("data").value || null; // Campo opcional
-  const horarioSaida = document.getElementById("horarioSaida").value || null; // Campo opcional
-  const vagasTotais = parseInt(document.getElementById("vagasTotais").value) || null; // Campo opcional
-  const imagens = document.getElementById("imagens").value.split(",").filter(url => url.trim() !== "") || []; // Campo opcional
+  const imagens = document.getElementById("imagens").value.split(",").filter(url => url.trim() !== "") || [];
   const descricao = document.getElementById("descricao").value;
-  const status = document.getElementById("status").value || "notificacao"; // Define como "notificacao" se estiver vazio
 
   // Validação dos campos obrigatórios
   if (!local || !descricao) {
-    alert("Local e descrição são obrigatórios.");
-    return;
+      alert("Local e descrição são obrigatórios.");
+      return;
   }
 
   try {
-    const resposta = await fetch("/cadastrar-caravana", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        local,
-        preco,
-        data,
-        horarioSaida,
-        vagasTotais,
-        imagens,
-        descricao,
-        status,
-      }),
-    });
+      const resposta = await fetch("/cadastrar-caravana", {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+              local,
+              imagens,
+              descricao,
+              status: "notificacao", // Status padrão
+              preco: null,          // Campos removidos do HTML mas mantidos no schema
+              data: null,
+              horarioSaida: null,
+              vagasTotais: null
+          }),
+      });
 
-    const dados = await resposta.json();
-    if (resposta.ok) {
-      alert("Caravana cadastrada com sucesso!");
-      fecharPopupCriarCaravana();
-      carregarTodasCaravanas();
-    } else {
-      alert("Erro ao cadastrar caravana: " + dados.error);
-    }
+      const dados = await resposta.json();
+      if (resposta.ok) {
+          alert("Caravana cadastrada com sucesso!");
+          fecharPopupCriarCaravana();
+          carregarTodasCaravanas();
+      } else {
+          alert("Erro ao cadastrar caravana: " + dados.error);
+      }
   } catch (error) {
-    console.error("Erro ao cadastrar caravana:", error);
-    alert("Erro ao cadastrar caravana: " + error.message);
+      console.error("Erro ao cadastrar caravana:", error);
+      alert("Erro ao cadastrar caravana: " + error.message);
   }
 };
 
@@ -179,33 +176,40 @@ const cadastrarCaravana = async () => {
 const validarTelefone = (telefone) => {
   const regexTelefone = /^\(?\d{2}\)?\s?\d{4,5}[-\s]?\d{4}$/;
   return regexTelefone.test(telefone);
-};
+}
 
-const carregarCaravanasRegistradas = async (usuarioId, isAdmin = false) => {
+// (A versão que eu já tinha te passado, que está correta)
+const carregarCaravanasRegistradas = async (usuarioId) => {
   try {
     const resposta = await fetch(`/caravanas-registradas/${usuarioId}`);
-    const caravanas = await resposta.json();
+    const caravanas = await resposta.json(); // Já é o array de objetos!
 
     const container = document.getElementById("caravanas-registradas-container");
     if (!container) {
       console.error("Elemento 'caravanas-registradas-container' não encontrado.");
       return;
     }
+    container.innerHTML = "";
 
-    container.innerHTML = ""; // Limpa o container antes de adicionar os cards
+    if (caravanas.length === 0) { // Verifica se o array está vazio
+       container.innerHTML = '<p class="no-caravanas-message">Você não está registrado em nenhuma caravana.</p>';
+       return;
+    }
 
-    caravanas.forEach((caravana) => {
-      const card = criarCardCaravana(caravana, isAdmin);
+    caravanas.forEach(caravana => {
+      const card = criarCardCaravana(caravana, false); // Passa isAdmin = false
       container.appendChild(card);
     });
 
-    // Exibe a seção de caravanas registradas
     exibirSecao("caravanas-registradas-section");
   } catch (error) {
     console.error("Erro ao carregar caravanas registradas:", error);
     alert("Erro ao carregar caravanas registradas.");
   }
 };
+
+
+
 
 const carregarCaravanasNotificacoes = async (usuarioEmail) => {
   try {
@@ -232,6 +236,49 @@ const carregarCaravanasNotificacoes = async (usuarioEmail) => {
     alert("Erro ao carregar caravanas com notificações.");
   }
 };
+
+const carregarCaravanasCanceladas = async () => {
+  const usuario = auth.currentUser;
+  const container = document.getElementById("caravanas-canceladas-container");
+
+  if (!container) {
+      console.error("Elemento 'caravanas-canceladas-container' não encontrado.");
+      return;
+  }
+  container.innerHTML = ""; // Limpa o container
+
+  try {
+      let url = "/caravanas-canceladas";
+      if (usuario) {
+          url += `?uid=${usuario.uid}`; // Adiciona o UID à URL se o usuário estiver logado
+      }
+
+      const resposta = await fetch(url);
+      const caravanas = await resposta.json();
+
+      if (resposta.status === 401) { //Verifica se precisa ta logado
+          container.innerHTML = "<p>Você precisa estar logado para ver as caravanas.</p>"
+          return;
+      }
+
+
+      if (caravanas.length === 0) {
+          container.innerHTML = '<p class="no-caravanas-message">Não há caravanas canceladas no momento.</p>';
+          return;
+      }
+
+      caravanas.forEach((caravana) => {
+          const card = criarCardCaravana(caravana, usuario && usuario.email === "adm@adm.com");
+           container.appendChild(card)
+      });
+      exibirSecao("caravanas-canceladas-section");
+
+  } catch (error) {
+      console.error("Erro ao carregar caravanas canceladas:", error);
+      container.innerHTML = "<p>Erro ao carregar caravanas canceladas.</p>"; // Mensagem de erro mais amigável
+  }
+};
+
 
 const pararNotificacao = async (caravanaId) => {
   const usuarioId = auth.currentUser?.uid;
@@ -287,7 +334,6 @@ const atualizarInterface = async (user) => {
   const usuarioNavegacao = document.getElementById("usuario-navegacao");
   const formCadastro = document.getElementById("form-cadastro");
   const formLogin = document.getElementById("form-login");
-
   if (user) {
     // Usuário logado
     botoes.style.display = "none"; // Oculta os botões de cadastro/login
@@ -315,19 +361,15 @@ const atualizarInterface = async (user) => {
     } else {
       adminNavegacao.style.display = "none"; // Oculta os botões do admin
       usuarioNavegacao.style.display = "block"; // Exibe os botões do usuário comum
-
-      // Carrega as caravanas registradas, notificações e canceladas
-      carregarCaravanasRegistradas(user.uid);
-      carregarCaravanasNotificacoes(user.email);
-      carregarCaravanasCanceladas(user.uid);
     }
   } else {
     // Usuário não logado
-    botoes.style.display = "flex"; // Mostra os botões de cadastro/login
-    infoUsuario.style.display = "none"; // Oculta as informações do usuário
-    adminNavegacao.style.display = "none"; // Oculta os botões do admin
-    usuarioNavegacao.style.display = "none"; // Oculta os botões do usuário comum
-    mostrarFormulario("cadastro"); // Mostra o formulário de cadastro por padrão
+    botoes.style.display = "flex";
+    caravanasespaco.style.display = "none";
+    infoUsuario.style.display = "none"; 
+    adminNavegacao.style.display = "none"; 
+    usuarioNavegacao.style.display = "none"; 
+    mostrarFormulario("cadastro"); 
 
     // Oculta as seções de caravanas
     document.getElementById("caravanas-registradas-section").style.display = "none";
@@ -391,23 +433,30 @@ const cancelarCaravana = async (id) => {
   try {
     const resposta = await fetch(`/cancelar-caravana/${id}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
     });
 
     const dados = await resposta.json();
     if (resposta.ok) {
       alert("Caravana cancelada com sucesso!");
 
-      // Recarrega a seção atual
+      // Recarrega a seção atual de forma mais precisa
       const secaoAtual = document.querySelector(".secao-ativa");
       if (secaoAtual) {
-        const secaoId = secaoAtual.id;
-        if (secaoId === "caravanas-confirmadas-section") {
-          carregarCaravanasConfirmadas(); // Recarrega caravanas confirmadas
-        } else if (secaoId === "caravanas-todas-section") {
-          carregarTodasCaravanas(); // Recarrega todas as caravanas
+        switch(secaoAtual.id) {
+          case "caravanas-todas-section":
+            carregarTodasCaravanas();
+            break;
+          case "caravanas-confirmadas-section":
+            carregarCaravanasConfirmadas();
+            break;
+          case "caravanas-nao-confirmadas-section":
+            carregarCaravanasNaoConfirmadas();
+            break;
+          case "caravanas-canceladas-section":
+            carregarCaravanasCanceladas();
+            break;
+          default:
+            location.reload(); // Fallback
         }
       }
     } else {
@@ -556,88 +605,100 @@ const carregarCaravanasNaoConfirmadas = async () => {
   }
 };
 
-const carregarCaravanasCanceladas = async () => {
-  try {
-    const secaoCanceladas = document.getElementById("caravanas-canceladas-section");
-
-    // Carrega as caravanas canceladas
-    const resposta = await fetch("/caravanas-por-status/cancelada");
-    const caravanas = await resposta.json();
-
-    const container = document.getElementById("caravanas-canceladas-container");
-    if (!container) {
-      console.error("Elemento 'caravanas-canceladas-container' não encontrado.");
-      return;
-    }
-
-    container.innerHTML = ""; // Limpa o container
-
-    caravanas.forEach((caravana) => {
-      const card = criarCardCaravana(caravana);
-      container.appendChild(card);
-    });
-
-    // Exibe a seção de caravanas canceladas
-    exibirSecao("caravanas-canceladas-section");
-  } catch (error) {
-    console.error("Erro ao carregar caravanas canceladas:", error);
-    alert("Erro ao carregar caravanas canceladas.");
-  }
-};
-
-const criarCardCaravana = (caravana, isAdmin = false) => {
+const criarCardCaravana = (caravana, isAdmin) => {
   const card = document.createElement("div");
   card.className = "roteiro-card";
-
+  
+  const user = auth.currentUser;
+  console.log(user.email)
+  if (user.email === "adm@adm.com")
+    isAdmin = true
+  
+  else
+    isAdmin = false
+  console.log(isAdmin)
   const imagem = caravana.imagens && caravana.imagens.length > 0 ? caravana.imagens[0] : "caminho/para/imagem_padrao.jpg";
 
   // Calcula o número de participantes e a porcentagem de ocupação
   const participantesAtuais = caravana.vagasTotais - caravana.vagasDisponiveis;
   const ocupacaoPercentual = caravana.vagasTotais > 0 ? ((participantesAtuais / caravana.vagasTotais) * 100).toFixed(2) : 0;
 
-  card.innerHTML = `
-    <img src="${imagem}" alt="${caravana.local}" />
-    <h4>${caravana.local}</h4>
-    <p>Data: ${caravana.data || "Não definida"}</p>
-    <p>Horário de Saída: ${caravana.horarioSaida || "Não definido"}</p>
-    <p>Preço: ${caravana.preco || "Não definido"}</p>
-    <p>Vagas Totais: ${caravana.vagasTotais || "Não definidas"}</p>
-    <p>Vagas Disponíveis: ${caravana.vagasDisponiveis || "Não definidas"}</p>
-    <p>Participantes Atuais: ${participantesAtuais}</p>
-    <p class="ocupacao">Ocupação: ${ocupacaoPercentual}%</p>
-    <p>Status: ${caravana.status}</p>
-    ${caravana.status === "notificacao" && isAdmin ? `
+    let innerHTML = `
+      <img src="${imagem}" alt="${caravana.local}" />
+      <h4>${caravana.local}</h4>
+      <p>Data: ${caravana.data || "Não definida"}</p>
+      <p>Horário de Saída: ${caravana.horarioSaida || "Não definido"}</p>
+      `;
+
+
+      if(isAdmin === false) {
+        console.log("deufalso")
+        console.log(caravana.status)
+        console.log(caravana.quantidadeTotal)
+          if (caravana.status === "confirmada" && caravana.quantidadeTotal > 0) {
+              innerHTML += `<p>Ingressos Comprados: ${caravana.quantidadeTotal}</p>`;
+          }
+      }
+      if (isAdmin) {
+        innerHTML += `
+          <p>Preço: ${caravana.preco || "Não definido"}</p>
+          <p>Vagas Totais: ${caravana.vagasTotais || "Não definidas"}</p>
+          <p>Vagas Disponíveis: ${caravana.vagasDisponiveis || "Não definidas"}</p>
+          <p>Participantes Atuais: ${participantesAtuais}</p>
+          <p class="ocupacao">Ocupação: ${ocupacaoPercentual}%</p>
+          <p>Status: ${caravana.status}</p>
+          `;
+      } 
+      
+
+  if (caravana.status === "notificacao" && isAdmin) {
+    innerHTML += `
       <button class="btn-confirmar" data-caravana-id="${caravana.id}">Confirmar</button>
       <button class="btn-cancelar" data-caravana-id="${caravana.id}">Cancelar</button>
-    ` : ''}
-    ${caravana.status === "notificacao" && !isAdmin ? `
+    `;
+  } else if (caravana.status === "notificacao" && !isAdmin) {
+    innerHTML += `
       <button class="btn-parar-notificacao" data-caravana-id="${caravana.id}">Parar Notificação</button>
-    ` : ''}
-    ${caravana.status === "confirmada" && isAdmin ? `
+    `;
+  } else if (caravana.status === "confirmada" && isAdmin) {
+     innerHTML += `
       <button class="btn-cancelar" data-caravana-id="${caravana.id}">Cancelar</button>
       <button class="btn-ver-participantes" data-caravana-id="${caravana.id}">Ver Integrantes</button>
-    ` : ''}
-    ${caravana.status === "cancelada" && isAdmin ? `
+    `;
+  } else if (caravana.status === "cancelada" && isAdmin) {
+      innerHTML += `
       <button class="btn-excluir" data-caravana-id="${caravana.id}">Excluir</button>
-    ` : ''}
-  `;
+    `;
+  }
 
-  // Adiciona eventos aos botões
-  if (caravana.status === "notificacao" && isAdmin) {
-    card.querySelector(".btn-confirmar").addEventListener("click", () => {
-      abrirPopupConfirmarCaravana(caravana.id);
-    });
-    card.querySelector(".btn-cancelar").addEventListener("click", () => {
-      cancelarCaravana(caravana.id);
-    });
+    card.innerHTML = innerHTML;
+
+  // ... (Restante do seu código para adicionar event listeners) ...
+    if (caravana.status === "notificacao" && isAdmin) {
+    const btnConfirmar = card.querySelector(".btn-confirmar");
+    const btnCancelar = card.querySelector(".btn-cancelar");
+    
+    if (btnConfirmar) {
+      btnConfirmar.addEventListener("click", () => {
+        abrirPopupConfirmarCaravana(caravana.id);
+      });
+    }
+    if (btnCancelar) {
+      btnCancelar.addEventListener("click", () => {
+        cancelarCaravana(caravana.id);
+      });
+    }
   } else if (caravana.status === "notificacao" && !isAdmin) {
-    card.querySelector(".btn-parar-notificacao").addEventListener("click", () => {
-      pararNotificacao(caravana.id);
-    });
-  } else if (caravana.status === "confirmada" && isAdmin) {
-    card.querySelector(".btn-cancelar").addEventListener("click", () => {
-      cancelarCaravana(caravana.id);
-    });
+    const btnPararNotificacao = card.querySelector(".btn-parar-notificacao");
+    if (btnPararNotificacao) {
+      btnPararNotificacao.addEventListener("click", () => {
+        pararNotificacao(caravana.id);
+      });
+    }
+  }else if (caravana.status === "confirmada" && isAdmin) {
+    // card.querySelector(".btn-cancelar").addEventListener("click", () => {
+    //   cancelarCaravana(caravana.id);
+    // });
     card.querySelector(".btn-ver-participantes").addEventListener("click", () => {
       verParticipantes(caravana.id);
     });
@@ -646,39 +707,67 @@ const criarCardCaravana = (caravana, isAdmin = false) => {
       excluirCaravana(caravana.id);
     });
   }
-
   return card;
 };
 
-// const carregarCaravanas = async () => {
-//   try {
-//     const resposta = await fetch("/caravanas");
-//     if (!resposta.ok) {
-//       throw new Error(`Erro ao buscar caravanas: ${resposta.statusText}`);
+
+// // Função para carregar *apenas* as caravanas canceladas para um usuário específico
+// const carregarCaravanasCanceladasParaUsuario = async () => {
+//     const usuario = auth.currentUser;
+
+//     if (!usuario) {
+//         // Se não houver usuário logado, não faz nada (ou exibe uma mensagem)
+//         console.log("Nenhum usuário logado. Não mostrando caravanas canceladas.");
+//         document.getElementById("caravanas-container").innerHTML = "<p>Você precisa estar logado para ver suas notificações de caravanas canceladas.</p>";
+//         return;
 //     }
 
-//     const caravanas = await resposta.json();
+//     try {
+//         const resposta = await fetch(`/caravanas`); // Busca *todas* as caravanas
+//         const caravanas = await resposta.json();
 
-//     const container = document.getElementById("caravanas-container");
-//     if (!container) {
-//       console.error("Elemento 'caravanas-container' não encontrado.");
-//       return;
+//         const container = document.getElementById("caravanas-container");
+//         container.innerHTML = ""; // Limpa o container
+
+//         // Filtra as caravanas:  precisa ser cancelada *E* o usuário precisa estar inscrito
+//         const caravanasCanceladasInscritas = await Promise.all(caravanas.filter(async (caravana) => { // Usando Promise.all diretamente
+//             if (caravana.status !== "cancelada") {
+//                 return false; // Não é cancelada, então ignora
+//             }
+
+//             // Verifica se o usuário está inscrito para esta caravana
+//             const inscricaoResposta = await fetch(`/verificar-inscricao/${caravana.id}/${usuario.uid}`);
+//             const inscricaoDados = await inscricaoResposta.json();
+//             return inscricaoDados.inscrito; // Retorna true se estiver inscrito, false se não
+//         }));
+
+//         if (caravanasCanceladasInscritas.length === 0) {
+//             container.innerHTML = "<p>Não há nenhuma notificação.</p>";
+//             return;
+//         }
+
+//         // Itera sobre as caravanas filtradas e cria os cards
+//         caravanasCanceladasInscritas.forEach((caravana) => {
+//           const card = document.createElement("div");
+//           card.className = "roteiro-card";
+//           const imagem = caravana.imagens && caravana.imagens.length > 0 ? caravana.imagens[0] : "caminho/para/imagem_padrao.jpg";
+
+//           card.innerHTML = `
+//               <img src="${imagem}" alt="${caravana.local}" />
+//               <h4>${caravana.local}</h4>
+//               <p class="preco-destaque">Cancelada</p>  <!-- Indica que foi cancelada -->
+//               <button class="btn-ver-mais" data-id="${caravana.id}">Ver mais</button>
+//           `;
+//             adicionarBotoesAdmin(card, caravana); // Mantém os botões de admin
+//           container.appendChild(card);
+//       });
+
+//     } catch (error) {
+//         console.error("Erro ao carregar caravanas canceladas:", error);
+//         alert("Erro ao carregar caravanas canceladas.");
 //     }
-
-//     container.innerHTML = ""; // Limpa o container antes de adicionar os cards
-
-//     caravanas.forEach((caravana) => {
-//       const card = criarCardCaravana(caravana);
-//       container.appendChild(card);
-//     });
-
-//     // Exibe a seção de caravanas
-//     document.getElementById("caravanas-section").style.display = "block";
-//   } catch (error) {
-//     console.error("Erro ao carregar caravanas:", error);
-//     alert("Erro ao carregar caravanas.");
-//   }
 // };
+
 
 const exibirSecao = (secaoId) => {
   const secoes = [
@@ -799,9 +888,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById("btn-caravanas-canceladas").addEventListener("click", () => {
-      carregarCaravanasCanceladas();
+      carregarCaravanasCanceladas(); // Chama a nova função
       exibirSecao("caravanas-canceladas-section");
-    });
+  });
   }
 
   // Botão para fechar o popup de criar caravana

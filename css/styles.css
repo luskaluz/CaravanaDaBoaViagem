@@ -1520,16 +1520,7 @@ footer {
   #popup-comprar:hover {
     background-color: #0056b3; /* Azul mais escuro ao passar o mouse */
   }
-  
-  /* Botão "Assinar Notificação" */
-  #popup-assinar-notificacao {
-    background-color: #28a745; /* Verde */
-    color: white; /* Texto branco */
-  }
-  
-  #popup-assinar-notificacao:hover {
-    background-color: #218838; /* Verde mais escuro ao passar o mouse */
-  }
+
   
   /* Botão "Fechar" */
   #popup-fechar {
@@ -1561,3 +1552,5 @@ footer {
     border-radius: 4px;
     width: 250px; /* Largura fixa para o input */
   }
+
+  

@@ -28,85 +28,144 @@ const formatarPreco = (preco) => {
   }).format(preco);
 };
 
-const abrirPopup = async (id) => {
+const toggleNotificacao = async (caravanaId) => {
+  const usuario = auth.currentUser;
+
+  if (!usuario) {
+      alert("Você precisa estar logado para gerenciar notificações.");
+      return;
+  }
+
+  const botaoNotificar = document.getElementById("popup-assinar-notificacao");
+  // CORREÇÃO:  Usa o valor ATUAL do atributo, não uma variável global desatualizada.
+  const inscritoAtual = botaoNotificar.getAttribute("data-inscrito") === "true";
+
+
   try {
-    console.log(`Tentando buscar caravana com ID: ${id}`); // Log do ID da caravana
-    const resposta = await fetch(`/caravanas/${id}`);
+      const resposta = await fetch("/inscrever-viagem", {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+              caravanaId,
+              usuarioId: usuario.uid,
+              usuarioEmail: usuario.email,
+              inscrever: !inscritoAtual, // Inverte o estado da inscrição
+          }),
+      });
 
-    // Verifica se a resposta é um JSON válido
-    const contentType = resposta.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      console.error("Resposta não é um JSON válido. Content-Type:", contentType);
-      const textoResposta = await resposta.text(); // Lê o corpo da resposta como texto
-      console.error("Conteúdo da resposta:", textoResposta); // Log do conteúdo da resposta
-      throw new Error("Resposta não é um JSON válido.");
-    }
+      const dados = await resposta.json();
+      if (resposta.ok) {
+          // CORREÇÃO:  Atualiza o atributo e o *texto* do botão.  Remove a variável global 'inscrito'.
+          const novoEstadoInscrito = !inscritoAtual;
+          botaoNotificar.setAttribute("data-inscrito", novoEstadoInscrito);
+          botaoNotificar.textContent = novoEstadoInscrito ? "Não Receber Notificação" : "Receber Notificação";
 
-    const caravana = await resposta.json(); // Converte a resposta para JSON
-    console.log("Caravana recebida:", caravana); // Log da caravana recebida
 
-    // Define o ID da caravana no popup
-    document.getElementById("popup").setAttribute("data-caravana-id", id);
-
-    // Atualiza o conteúdo do popup
-    document.getElementById("popup-nome").textContent = caravana.local;
-    document.getElementById("popup-descricao").textContent = caravana.descricao;
-
-    // Verifica o status da caravana
-    if (caravana.status === "notificacao") {
-      // Oculta campos específicos para caravanas com status "notificacao"
-      document.getElementById("popup-data").parentElement.style.display = "none"; // Oculta o campo Data de Saída
-      document.getElementById("popup-horario").parentElement.style.display = "none"; // Oculta o campo Horário de Saída
-      document.getElementById("popup-vagas-totais").parentElement.style.display = "none"; // Oculta o campo Vagas Totais
-      document.getElementById("popup-vagas-disponiveis").parentElement.style.display = "none"; // Oculta o campo Vagas Disponíveis
-      document.getElementById("comprar-ingressos-container").style.display = "none"; // Oculta o campo "Comprar ingressos"
-      document.getElementById("popup-comprar").style.display = "none"; // Oculta o botão Comprar Ingresso
-      document.getElementById("popup-assinar-notificacao").style.display = "block"; // Mostra o botão de assinar notificação
-    } else if (caravana.status === "confirmada") {
-      // Exibe todos os campos para caravanas confirmadas
-      document.getElementById("popup-data").parentElement.style.display = "block"; // Exibe o campo Data de Saída
-      document.getElementById("popup-horario").parentElement.style.display = "block"; // Exibe o campo Horário de Saída
-      document.getElementById("popup-vagas-totais").parentElement.style.display = "block"; // Exibe o campo Vagas Totais
-      document.getElementById("popup-vagas-disponiveis").parentElement.style.display = "block"; // Exibe o campo Vagas Disponíveis
-      document.getElementById("comprar-ingressos-container").style.display = "flex"; // Exibe o campo "Comprar ingressos"
-      document.getElementById("popup-comprar").style.display = "block"; // Exibe o botão Comprar Ingresso
-      document.getElementById("popup-assinar-notificacao").style.display = "none"; // Oculta o botão de assinar notificação
-
-      // Preenche os campos com os dados da caravana
-      document.getElementById("popup-data").textContent = caravana.data || "N/A";
-      document.getElementById("popup-horario").textContent = caravana.horarioSaida || "N/A";
-      document.getElementById("popup-vagas-totais").textContent = caravana.vagasTotais || "N/A";
-
-      // Trata o caso de "Vagas Disponíveis"
-      const vagasDisponiveis = caravana.vagasDisponiveis ?? "N/A"; // Usa "N/A" se for null/undefined
-      document.getElementById("popup-vagas-disponiveis").textContent = vagasDisponiveis === 0 ? 0 : vagasDisponiveis;
-
-      // Destaca se não houver vagas
-      const vagasDisponiveisElement = document.getElementById("popup-vagas-disponiveis");
-      if (vagasDisponiveis === 0) {
-        vagasDisponiveisElement.classList.add("sem-vagas");
       } else {
-        vagasDisponiveisElement.classList.remove("sem-vagas");
+          alert("Erro ao atualizar notificação: " + dados.error);
       }
-    }
-
-    // Verifica se há imagens e exibe a primeira
-    if (caravana.imagens && caravana.imagens.length > 0) {
-      imagensAtuais = caravana.imagens; // Armazena as imagens para navegação
-      indiceImagemAtual = 0; // Começa na primeira imagem
-      document.getElementById("popup-imagem-principal").src = imagensAtuais[indiceImagemAtual];
-    } else {
-      // Se não houver imagens, exibe uma imagem padrão
-      document.getElementById("popup-imagem-principal").src = "caminho/para/imagem_padrao.jpg";
-    }
-
-    // Exibe o popup
-    document.getElementById("popup").style.display = "flex";
   } catch (error) {
-    console.error("Erro ao abrir popup:", error);
-    alert("Erro ao carregar detalhes da caravana.");
+      console.error("Erro ao atualizar notificação:", error);
+      alert("Erro ao atualizar notificação: " + error.message);
   }
 };
+
+
+// Função para abrir o popup (modificada - REMOVE a variável global 'inscrito')
+const abrirPopup = async (id) => {
+  try {
+      console.log(`Tentando buscar caravana com ID: ${id}`);
+      const resposta = await fetch(`/caravanas/${id}`);
+
+      const contentType = resposta.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+          console.error("Resposta não é um JSON válido. Content-Type:", contentType);
+          const textoResposta = await resposta.text();
+          console.error("Conteúdo da resposta:", textoResposta);
+          throw new Error("Resposta não é um JSON válido.");
+      }
+
+      const caravana = await resposta.json();
+      console.log("Caravana recebida:", caravana);
+
+      document.getElementById("popup").setAttribute("data-caravana-id", id);
+
+      document.getElementById("popup-nome").textContent = caravana.local;
+      document.getElementById("popup-descricao").textContent = caravana.descricao;
+
+      // --- MODIFICAÇÕES AQUI ---
+      const botaoNotificacao = document.getElementById("popup-assinar-notificacao");
+
+      // REMOVIDO: let inscrito = false;  (Não precisa mais da variável global)
+      const usuario = auth.currentUser;
+
+      if (usuario) {
+          const inscricaoResposta = await fetch(`/verificar-inscricao/${id}/${usuario.uid}`);
+          const inscricaoDados = await inscricaoResposta.json();
+          // CORREÇÃO: Atualiza DIRETAMENTE o atributo do botão!
+          botaoNotificacao.setAttribute("data-inscrito", inscricaoDados.inscrito);
+      }
+
+
+
+      if (caravana.status === "notificacao") {
+          document.getElementById("popup-data").parentElement.style.display = "none";
+          document.getElementById("popup-horario").parentElement.style.display = "none";
+          document.getElementById("popup-vagas-totais").parentElement.style.display = "none";
+          document.getElementById("popup-vagas-disponiveis").parentElement.style.display = "none";
+          document.getElementById("comprar-ingressos-container").style.display = "none";
+          document.getElementById("popup-comprar").style.display = "none";
+
+          botaoNotificacao.style.display = "block";
+          // CORREÇÃO:  Define o texto *depois* de ter o valor de 'data-inscrito'
+          botaoNotificacao.textContent = botaoNotificacao.getAttribute("data-inscrito") === "true" ? "Não Receber Notificação" : "Receber Notificação";
+
+
+      } else if (caravana.status === "confirmada") {
+          document.getElementById("popup-data").parentElement.style.display = "block";
+          document.getElementById("popup-horario").parentElement.style.display = "block";
+          document.getElementById("popup-vagas-totais").parentElement.style.display = "block";
+          document.getElementById("popup-vagas-disponiveis").parentElement.style.display = "block";
+          document.getElementById("comprar-ingressos-container").style.display = "flex";
+          document.getElementById("popup-comprar").style.display = "block";
+          botaoNotificacao.style.display = "none";
+
+          document.getElementById("popup-data").textContent = caravana.data || "N/A";
+          document.getElementById("popup-horario").textContent = caravana.horarioSaida || "N/A";
+          document.getElementById("popup-vagas-totais").textContent = caravana.vagasTotais || "N/A";
+
+          const vagasDisponiveis = caravana.vagasDisponiveis ?? "N/A";
+          document.getElementById("popup-vagas-disponiveis").textContent = vagasDisponiveis === 0 ? 0 : vagasDisponiveis;
+
+          const vagasDisponiveisElement = document.getElementById("popup-vagas-disponiveis");
+          if (vagasDisponiveis === 0) {
+              vagasDisponiveisElement.classList.add("sem-vagas");
+          } else {
+              vagasDisponiveisElement.classList.remove("sem-vagas");
+          }
+      }
+
+      // --- FIM DAS MODIFICAÇÕES ---
+
+      if (caravana.imagens && caravana.imagens.length > 0) {
+          imagensAtuais = caravana.imagens;
+          indiceImagemAtual = 0;
+          document.getElementById("popup-imagem-principal").src = imagensAtuais[indiceImagemAtual];
+      } else {
+          document.getElementById("popup-imagem-principal").src = "caminho/para/imagem_padrao.jpg";
+      }
+
+      document.getElementById("popup").style.display = "flex";
+  } catch (error) {
+      console.error("Erro ao abrir popup:", error);
+      alert("Erro ao carregar detalhes da caravana.");
+  }
+};
+
+
+
 // Função para navegar entre as imagens
 const navegarImagem = (direcao) => {
   if (direcao === "anterior") {
@@ -459,11 +518,11 @@ const assinarNotificacao = async (caravanaId) => {
   }
 };
 
-// Evento para assinar notificação
-document.getElementById("popup-assinar-notificacao").addEventListener("click", () => {
-  const caravanaId = document.getElementById("popup").getAttribute("data-caravana-id");
-  assinarNotificacao(caravanaId);
-});
+// // Evento para assinar notificação
+// document.getElementById("popup-assinar-notificacao").addEventListener("click", () => {
+//   const caravanaId = document.getElementById("popup").getAttribute("data-caravana-id");
+//   assinarNotificacao(caravanaId);
+// });
 
 // Monitora o estado de autenticação
 onAuthStateChanged(auth, (user) => {
@@ -478,27 +537,31 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// Executa a exibição das caravanas ao carregar a página
+// Dentro de DOMContentLoaded (permanece igual)
 document.addEventListener("DOMContentLoaded", () => {
   // Captura cliques nos botões "Ver mais"
   document.addEventListener("click", (event) => {
-    if (event.target.classList.contains("btn-ver-mais")) {
-      const id = event.target.getAttribute("data-id");
-      abrirPopup(id);
-    }
+      if (event.target.classList.contains("btn-ver-mais")) {
+          const id = event.target.getAttribute("data-id");
+          abrirPopup(id);
+      }
   });
 
-  // Evento para comprar ingressos
-  document.getElementById("popup-comprar").addEventListener("click", () => {
-    const caravanaId = document.getElementById("popup").getAttribute("data-caravana-id");
-    const quantidade = parseInt(document.getElementById("quantidade-ingressos").value);
+    // Evento para comprar ingressos
+   document.getElementById("popup-comprar").addEventListener("click", () => {
+      const caravanaId = document.getElementById("popup").getAttribute("data-caravana-id");
+      const quantidade = parseInt(document.getElementById("quantidade-ingressos").value, 10);
+          if (quantidade < 1) {
+              alert("A quantidade de ingressos deve ser pelo menos 1.");
+              return;
+         }
+      comprarIngresso(caravanaId, quantidade);
+  });
 
-    if (quantidade < 1) {
-      alert("A quantidade de ingressos deve ser pelo menos 1.");
-      return;
-    }
-
-    comprarIngresso(caravanaId, quantidade);
+  // Evento para alternar notificação.
+  document.getElementById("popup-assinar-notificacao").addEventListener("click", () => {
+      const caravanaId = document.getElementById("popup").getAttribute("data-caravana-id");
+      toggleNotificacao(caravanaId);
   });
 
   // Eventos de navegação do popup
@@ -506,31 +569,3 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("popup-proximo").addEventListener("click", () => navegarImagem("proximo"));
   document.getElementById("popup-fechar").addEventListener("click", fecharPopup);
 });
-
-// Event listener para fechar o popup de participantes
-document.getElementById("botao-fechar-popup-participantes").addEventListener("click", () => {
-document.getElementById("popup-ver-participantes").style.display = "none";
-});
-
-// Event listener para abrir o popup de participantes ao clicar no botão "Ver Participantes"
-document.addEventListener("click", (event) => {
-if (event.target.classList.contains("btn-ver-participantes")) {
-  const caravanaId = event.target.dataset.caravanaId;
-  verParticipantes(caravanaId);
-}
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

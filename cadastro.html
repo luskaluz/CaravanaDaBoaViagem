@@ -69,7 +69,6 @@
             <p>Email: <span id="email-usuario"></span></p>
             <button id="botao-logout">Logout</button>
         </div>
-
         <!-- Seção para exibir caravanas confirmadas -->
         <section id="caravanas-confirmadas-section" style="display: none;">
             <h2>Caravanas Confirmadas</h2>
@@ -139,24 +138,23 @@
             </div>
         </section>
 
-        <!-- Popup para criar caravana -->
         <div id="popup-criar-caravana" class="popup">
             <div class="popup-content">
-                <h2>Criar Caravana</h2>
-                <form id="formulario-criar-caravana">
-                    <label for="local">Local:</label>
-                    <input type="text" id="local" required>
-                    <label for="imagens">Links das Fotos (separados por vírgula):</label>
-                    <input type="text" id="imagens" required>
-                    <label for="descricao">Descrição:</label>
-                    <textarea id="descricao" required></textarea>
-                    <div class="botoes-popup">
-                        <button type="button" id="botao-cadastrar-caravana">Cadastrar</button>
-                        <button type="button" id="botao-fechar-popup">Fechar</button>
-                    </div>
-                </form>
+              <h2>Criar Caravana</h2>
+              <form id="formulario-criar-caravana">
+                <label for="local">Local:</label>
+                <input type="text" id="local" required>
+                <label for="imagens">Links das Fotos (separados por vírgula):</label>
+                <input type="text" id="imagens">
+                <label for="descricao">Descrição:</label>
+                <textarea id="descricao" required></textarea>
+                <div class="botoes-popup">
+                  <button type="button" id="botao-cadastrar-caravana">Cadastrar</button>
+                  <button type="button" id="botao-fechar-popup">Fechar</button>
+                </div>
+              </form>
             </div>
-        </div>
+          </div>
 
         <!-- Popup para confirmar caravana -->
         <div id="popup-confirmar-caravana" class="popup">

@@ -323,16 +323,37 @@ app.get("/caravanas-registradas/:usuarioId", async (req, res) => {
       .where("usuarioId", "==", usuarioId)
       .get();
 
-    const caravanasRegistradas = [];
+    const caravanasAgrupadas = {};
+
+    // 1. Agrupar participantes por caravanaId e somar quantidades:
     for (const doc of participantesSnapshot.docs) {
       const participante = doc.data();
-      const caravanaDoc = await db.collection("caravanas").doc(participante.caravanaId).get();
-      if (caravanaDoc.exists) {
-        const caravana = caravanaDoc.data();
-        // Filtra caravanas que não estão canceladas
-        if (caravana.status !== "cancelada") {
-          caravanasRegistradas.push({ id: caravanaDoc.id, ...caravana });
-        }
+      const caravanaId = participante.caravanaId;
+
+      if (!caravanasAgrupadas[caravanaId]) {
+        // Primeira vez que encontramos esta caravana:
+        caravanasAgrupadas[caravanaId] = {
+          id: caravanaId, // ID da caravana (usaremos depois)
+          quantidadeTotal: parseInt(participante.quantidade) || 0, // INICIALIZA quantidadeTotal
+        };
+      } else {
+        // Já encontramos esta caravana: somar quantidade
+        caravanasAgrupadas[caravanaId].quantidadeTotal +=
+          parseInt(participante.quantidade) || 0; // SOMA à quantidadeTotal
+      }
+    }
+
+    // 2. Buscar os dados *completos* das caravanas (UMA VEZ):
+    const caravanasRegistradas = [];
+    for (const caravanaId of Object.keys(caravanasAgrupadas)) {
+      const caravanaDoc = await db.collection("caravanas").doc(caravanaId).get();
+      if (caravanaDoc.exists && caravanaDoc.data().status !== "cancelada") {
+        // Combina os dados da caravana com a quantidadeTotal:
+        caravanasRegistradas.push({
+          ...caravanaDoc.data(),
+          id: caravanaDoc.id, // Garante que o ID está presente
+          quantidadeTotal: caravanasAgrupadas[caravanaId].quantidadeTotal, // USA A QUANTIDADE TOTAL
+        });
       }
     }
 
@@ -342,6 +363,9 @@ app.get("/caravanas-registradas/:usuarioId", async (req, res) => {
     res.status(500).json({ error: "Erro ao buscar caravanas registradas." });
   }
 });
+
+
+
 
 app.get("/caravanas-notificacoes/:usuarioEmail", async (req, res) => {
   const { usuarioEmail } = req.params;
@@ -372,30 +396,6 @@ app.get("/caravanas-notificacoes/:usuarioEmail", async (req, res) => {
   }
 });
 
-app.get("/caravanas-notificacoes/:usuarioEmail", async (req, res) => {
-  const { usuarioEmail } = req.params;
-
-  try {
-    // Busca as inscrições do usuário
-    const inscricoesSnapshot = await db.collection("inscricoes")
-      .where("usuarioEmail", "==", usuarioEmail)
-      .get();
-
-    const caravanasNotificacoes = [];
-    for (const doc of inscricoesSnapshot.docs) {
-      const inscricao = doc.data();
-      const caravanaDoc = await db.collection("caravanas").doc(inscricao.caravanaId).get();
-      if (caravanaDoc.exists) {
-        caravanasNotificacoes.push({ id: caravanaDoc.id, ...caravanaDoc.data() });
-      }
-    }
-
-    res.status(200).json(caravanasNotificacoes);
-  } catch (error) {
-    console.error("Erro ao buscar caravanas para notificações:", error);
-    res.status(500).json({ error: "Erro ao buscar caravanas para notificações." });
-  }
-});
 
 app.get("/verificar-inscricao/:caravanaId/:usuarioId", async (req, res) => {
   const { caravanaId, usuarioId } = req.params;
@@ -471,6 +471,77 @@ app.put("/cancelar-caravana/:id", async (req, res) => {
   } catch (error) {
     console.error("Erro ao cancelar caravana:", error);
     res.status(500).json({ message: "Erro ao cancelar caravana.", error: error.message });
+  }
+});
+
+app.get("/caravanas-canceladas", async (req, res) => {
+  const { uid } = req.query; // Obtém o UID do usuário a partir dos parâmetros da query
+
+  try {
+      let caravanasCanceladas = [];
+
+      if (uid) {
+          // Usuário logado: verificar se é admin
+          const userDoc = await db.collection("users").doc(uid).get();
+          const isAdmin = userDoc.exists && userDoc.data().email === "adm@adm.com";
+
+          if (isAdmin) {
+              // ADMIN: Busca *todas* as caravanas canceladas
+              const caravanasSnapshot = await db.collection("caravanas").where("status", "==", "cancelada").get();
+              caravanasSnapshot.forEach((doc) => {
+                  caravanasCanceladas.push({ id: doc.id, ...doc.data() });
+              });
+
+          } else {
+              // USUÁRIO COMUM: Busca caravanas canceladas com base em inscrições e compras
+              const usuarioEmail = userDoc.data().email;
+
+              // 1. Busca caravanas onde o usuário comprou ingressos
+              const participantesSnapshot = await db.collection("participantes")
+                  .where("usuarioId", "==", uid)
+                  .get();
+              const caravanasCompradas = [];
+              for (const participanteDoc of participantesSnapshot.docs) {
+                  
+                  const caravanaId = participanteDoc.data().caravanaId;
+                
+                  caravanasCompradas.push(caravanaId)
+              }
+            
+
+              // 2. Busca caravanas onde o usuário se inscreveu para notificações
+              const inscricoesSnapshot = await db.collection("inscricoes")
+                  .where("usuarioId", "==", uid)
+                  .get();
+
+              const caravanasInscritas = [];
+
+              for(const inscricaoDoc of inscricoesSnapshot.docs){
+                  const caravanaId = inscricaoDoc.data().caravanaId;
+                  caravanasInscritas.push(caravanaId)
+              }
+              
+              //Combina os Ids unicos
+              const idsCaravanas = [...new Set([...caravanasCompradas, ...caravanasInscritas])];  // Remove IDs duplicados
+
+              // 3. Busca os detalhes das caravanas canceladas
+              for (const caravanaId of idsCaravanas ) {
+
+                  const caravanaDoc = await db.collection("caravanas").doc(caravanaId).get();
+                  if (caravanaDoc.exists && caravanaDoc.data().status === "cancelada") {
+                      caravanasCanceladas.push({ id: caravanaDoc.id, ...caravanaDoc.data() });
+                  }
+              }
+          }
+      } else {
+        // SEM USUÁRIO LOGADO - Retorna erro ou lista vazia (depende da sua lógica
+         return res.status(401).json({error: "Usuario precisa ta logado"})
+      }
+    
+      res.status(200).json(caravanasCanceladas);
+  } catch (error) {
+      console.error("Erro ao buscar caravanas canceladas:", error);
+      res.status(500).json({ error: "Erro ao buscar caravanas canceladas." });
   }
 });
 
